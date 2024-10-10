@@ -1,6 +1,6 @@
 package com.example.demo.utility;
 
-import com.example.demo.model.TransactionRecord;
+import com.example.demo.model.HealthRecord;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 import java.io.FileReader;
@@ -10,8 +10,8 @@ import java.util.List;
 
 public class CsvFilter {
 
-    public List<TransactionRecord> importCsv(String filePath) {
-        List<TransactionRecord> records = new ArrayList<>();
+    public List<HealthRecord> importCsv(String filePath) {
+        List<HealthRecord> records = new ArrayList<>();
 
         try (CSVReader csvReader = new CSVReader(new FileReader(filePath))) {
             String[] headers = csvReader.readNext();  // 读取第一行，假设是列标题
@@ -28,7 +28,7 @@ public class CsvFilter {
                 String transactionTime = transactionTimeIndex != -1 ? values[transactionTimeIndex] : null;
 
                 // 使用 record 生成的构造函数创建实例
-                TransactionRecord record = new TransactionRecord();
+                HealthRecord record = new HealthRecord();
 
                 records.add(record);
             }
@@ -51,10 +51,10 @@ public class CsvFilter {
 
     public static void main(String[] args) {
         CsvFilter importer = new CsvFilter();
-        List<TransactionRecord> records = importer.importCsv("path/to/your/file.csv");
+        List<HealthRecord> records = importer.importCsv("path/to/your/file.csv");
 
         // 输出导入的记录
-        for (TransactionRecord record : records) {
+        for (HealthRecord record : records) {
             System.out.println(record);
         }
     }

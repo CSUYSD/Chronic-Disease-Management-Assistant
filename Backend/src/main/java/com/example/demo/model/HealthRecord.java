@@ -10,16 +10,18 @@ import lombok.Data;
 
 @Entity
 @Data
-public class TransactionRecord {
+public class HealthRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    private String type;  // Income, Expense
-    private String category;
-    private Double amount;
-    private String TransactionMethod;
-    private ZonedDateTime transactionTime;
-    private String transactionDescription;
+    private Integer SBP;//高压
+    private Integer DBP;//低压
+    private String isHeadache;//头痛
+    private String isBackPain;//背痛
+    private String isChestPain; //胸痛
+    private String isLessUrination; //少尿
+    private ZonedDateTime importTime;
+    private String description;
 
     @Column(name = "user_id")
     private long userId;

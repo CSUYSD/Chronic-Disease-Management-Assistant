@@ -13,7 +13,7 @@ import lombok.Data;
 
 
 @Data
-public class TransactionUserDTO {
+public class UserDTO {
     @NotBlank(message = "Username cannot be blank")
     @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
     private String username;
@@ -31,6 +31,6 @@ public class TransactionUserDTO {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dob;
     private String avatar;
-
+    private String role;
     private List<String> accountName;
 }

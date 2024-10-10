@@ -5,67 +5,65 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import com.example.demo.model.Redis.RedisAccount;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.demo.Dao.TransactionUserDao;
+import com.example.demo.Dao.PatientDao;
+import com.example.demo.Dao.UserDao;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
-import com.example.demo.model.DTO.TransactionUserDTO;
+import com.example.demo.model.DTO.UserDTO;
+import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.Redis.RedisUser;
-import com.example.demo.model.TransactionUser;
+import com.example.demo.model.User;
+import com.example.demo.model.UserImpl.Patient;
 import com.example.demo.utility.JWT.JwtUtil;
 
-
-
-
-
 @Service
-public class TransactionUserService {
-    private static final Logger logger = LoggerFactory.getLogger(TransactionUserService.class);
-    private final TransactionUserDao transactionUserDao;
+public class UserService {
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    private final UserDao userDao;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
 
     private final PasswordEncoder passwordEncoder;
+    private final PatientDao patientDao;
+
     @Autowired
-    public TransactionUserService(TransactionUserDao transactionUserDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder) {
-        this.transactionUserDao = transactionUserDao;
+    public UserService(PatientDao patientDao, UserDao userDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder) {
+        this.userDao = userDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = passwordEncoder;
-
+        this.patientDao = patientDao;
     }
 
-    public List<TransactionUser> findAll() {
-        return transactionUserDao.findAll();
+    public List<User> findAll() {
+        return userDao.findAll();
     }
 
-    public Optional<TransactionUser> findById(Long id) {
-        return transactionUserDao.findById(id);
+    public Optional<User> findById(Long id) {
+        return userDao.findById(id);
     }
 
-    public Optional<TransactionUser> findByUsername(String username) {
-        return transactionUserDao.findByUsername(username);
+    public Optional<User> findByUsername(String username) {
+        return userDao.findByUsername(username);
     }
 
-    public void updateUser(Long id, TransactionUser updatedUser) throws UserNotFoundException {
-        Optional<TransactionUser> existingUserOptional = transactionUserDao.findById(id);
+    public void updateUser(Long id, Patient updatedUser) throws UserNotFoundException {
+        Optional<User> existingUserOptional = userDao.findById(id);
 
         if (!existingUserOptional.isPresent()) {
             throw new UserNotFoundException("User not found");
         }
 
-        TransactionUser existingUser = existingUserOptional.get();
+        User existingUser = existingUserOptional.get();
         existingUser.setEmail(updatedUser.getEmail());
         existingUser.setPhone(updatedUser.getPhone());
 
@@ -77,36 +75,36 @@ public class TransactionUserService {
         }
 
 
-        transactionUserDao.save(existingUser);
+        userDao.save(existingUser);
     }
 
     public void deleteUser(Long id) throws UserNotFoundException, DataIntegrityViolationException {
-        Optional<TransactionUser> userOptional = transactionUserDao.findById(id);
+        Optional<User> userOptional = userDao.findById(id);
 
         if (!userOptional.isPresent()) {
             throw new UserNotFoundException("User not found");
         }
 
-        transactionUserDao.deleteById(id);
+        userDao.deleteById(id);
     }
 
     public void updateAvatar(String token, String avatar) throws UserNotFoundException {
         token = token.replace("Bearer ", "");
         Long userId = jwtUtil.getUserIdFromToken(token);
-        Optional<TransactionUser> userOptional = transactionUserDao.findById(userId);
+        Optional<User> userOptional = userDao.findById(userId);
 
         if (!userOptional.isPresent()) {
             throw new UserNotFoundException("User not found");
         }
         
-        TransactionUser user = userOptional.get();
+        User user = userOptional.get();
         user.setAvatar(avatar);
-        transactionUserDao.save(user);
+        userDao.save(user);
     }
 
 
     @Transactional(readOnly = true)
-    public Optional<TransactionUserDTO> getUserInfoByUserId(String token) {
+    public Optional<UserDTO> getUserInfoByUserId(String token) {
         token = token.replace("Bearer ", "");
         Long userId = jwtUtil.getUserIdFromToken(token);
         String userRedisKey = "login_user:" + userId + ":info";
@@ -119,13 +117,13 @@ public class TransactionUserService {
             return Optional.of(getUserInfoFromRedis(redisUser, userId));
         } else {
             // 如果 Redis 中没有用户信息，从数据库中获取
-            return transactionUserDao.findById(userId)
+            return patientDao.findById(userId)
                     .map(this::convertToDTO);
         }
     }
 
-    private TransactionUserDTO getUserInfoFromRedis(RedisUser redisUser, Long userId) {
-        TransactionUserDTO userDTO = new TransactionUserDTO();
+    private UserDTO getUserInfoFromRedis(RedisUser redisUser, Long userId) {
+        UserDTO userDTO = new UserDTO();
         userDTO.setUsername(redisUser.getUsername());
         userDTO.setEmail(redisUser.getEmail());
         userDTO.setPhone(redisUser.getPhone());
@@ -145,8 +143,8 @@ public class TransactionUserService {
         return userDTO;
     }
 
-    private TransactionUserDTO convertToDTO(TransactionUser user) {
-        TransactionUserDTO userDTO = new TransactionUserDTO();
+    private UserDTO convertToDTO(Patient user) {
+        UserDTO userDTO = new UserDTO();
         userDTO.setUsername(user.getUsername());
         userDTO.setEmail(user.getEmail());
         userDTO.setPhone(user.getPhone());

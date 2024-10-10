@@ -2,9 +2,10 @@ package com.example.demo.model;
 
 import java.util.List;
 
+import com.example.demo.model.UserImpl.Patient;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -26,14 +27,11 @@ public class Account {
 
     @JsonManagedReference
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
-    private List<TransactionRecord> transactionRecords;
+    private List<HealthRecord> healthRecords;
 
     @JsonBackReference
     @ManyToOne
-    @JoinColumn(name = "transaction_user_id")
-    private TransactionUser transactionUser;
-
-
-
+    @JoinColumn(name = "patient_id")
+    private Patient patient;
 
 }

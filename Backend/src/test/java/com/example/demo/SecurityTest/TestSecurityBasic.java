@@ -5,8 +5,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import com.example.demo.Dao.TransactionUserDao;
-import com.example.demo.model.TransactionUser;
+import com.example.demo.Dao.PatientDao;
+import com.example.demo.model.UserImpl.Patient;
 import com.example.demo.utility.JWT.JwtUtil;
 import static com.google.common.truth.Truth.assertThat;
 
@@ -14,13 +14,13 @@ import static com.google.common.truth.Truth.assertThat;
 public class TestSecurityBasic {
 
     @Autowired
-    private TransactionUserDao transactionUserDao;
+    private PatientDao patientDao;
     @Autowired
     private JwtUtil jwtUtil;
 
     @Test
     public void testDatabaseInitialization() {
-        List<TransactionUser> users = transactionUserDao.findAll();
+        List<Patient> users = patientDao.findAll();
         assertThat(users).isNotEmpty();
         assertThat(users.size()).isEqualTo(5);
     }

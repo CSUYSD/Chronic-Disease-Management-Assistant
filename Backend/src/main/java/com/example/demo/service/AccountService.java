@@ -1,12 +1,12 @@
 package com.example.demo.service;
 
-import com.example.demo.Dao.TransactionUserDao;
+import com.example.demo.Dao.PatientDao;
 import com.example.demo.exception.AccountAlreadyExistException;
 import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.DTO.AccountDTO;
 import com.example.demo.model.Redis.RedisAccount;
-import com.example.demo.model.TransactionUser;
+import com.example.demo.model.UserImpl.Patient;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.Dao.AccountDao;
@@ -26,13 +26,13 @@ public class AccountService {
 
     private final AccountDao accountDao;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final TransactionUserDao transactionUserDao;
+    private final PatientDao patientDao;
 
     @Autowired
-    public AccountService(AccountDao accountDao, RedisTemplate<String, Object> redisTemplate, TransactionUserDao transactionUserDao) {
+    public AccountService(AccountDao accountDao, RedisTemplate<String, Object> redisTemplate, PatientDao patientDao) {
         this.accountDao = accountDao;
         this.redisTemplate = redisTemplate;
-        this.transactionUserDao = transactionUserDao;
+        this.patientDao = patientDao;
     }
 
     public List<Account> getAllAccounts() {
@@ -63,13 +63,13 @@ public class AccountService {
         }
         
         // 获取用户,从token里找到的id
-        TransactionUser user = transactionUserDao.findById(userId)
+        Patient user = patientDao.findById(userId)
             .orElseThrow(() -> new UserNotFoundException("用户不存在"));
         
         // 存到PSQL里
         Account newAccount = new Account();
         newAccount.setAccountName(accountDTO.getName());
-        newAccount.setTransactionUser(user);
+        newAccount.setPatient(user);
         newAccount.setTotalIncome(0.0);
         newAccount.setTotalExpense(0.0);
         accountDao.save(newAccount);
@@ -92,9 +92,9 @@ public class AccountService {
 
     public Account updateAccount(Long id, AccountDTO accountDTO) throws AccountNotFoundException {
         Account existingAccount = getAccountByAccountId(id);
-        TransactionUser user = existingAccount.getTransactionUser();
+        Patient user = existingAccount.getPatient();
 
-        List<Account> existingAccounts = accountDao.findByTransactionUser(user)
+        List<Account> existingAccounts = accountDao.findByPatient(user)
                 .stream()
                 .filter(account -> !account.getId().equals(id))  // 排除当前修改的账户
                 .collect(Collectors.toList());
@@ -114,7 +114,7 @@ public class AccountService {
         Account updatedAccount = accountDao.save(existingAccount);
 
         // 更新 Redis 缓存
-        String redisKey = "login_user:" + existingAccount.getTransactionUser().getId() + ":account:" + existingAccount.getId();
+        String redisKey = "login_user:" + existingAccount.getPatient().getId() + ":account:" + existingAccount.getId();
         RedisAccount redisAccount = new RedisAccount(
                 updatedAccount.getId(),
                 updatedAccount.getAccountName(),
@@ -134,7 +134,7 @@ public class AccountService {
         accountDao.delete(account);
 
         // 删除 Redis 中的缓存
-        String redisKey = "login_user:" + account.getTransactionUser().getId() + ":account:" + id;
+        String redisKey = "login_user:" + account.getPatient().getId() + ":account:" + id;
         redisTemplate.delete(redisKey);
 
     }

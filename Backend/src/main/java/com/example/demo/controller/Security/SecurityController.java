@@ -11,15 +11,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;
-import com.example.demo.model.DTO.TransactionUserDTO;
+import com.example.demo.model.DTO.UserDTO;
 import com.example.demo.service.Security.SecurityService;
 import com.example.demo.service.Security.UserDetailService;
 
@@ -47,15 +43,15 @@ public class SecurityController {
 
     // 注册
     @PostMapping("/signup")
-    public ResponseEntity<String> createUser(@Valid @RequestBody TransactionUserDTO userDTO) {
+    public ResponseEntity<String> createUser(@Valid @RequestBody UserDTO userDTO, @RequestParam String role) {
         try {
-            securityService.saveUser(userDTO);
-            return ResponseEntity.status(HttpStatus.CREATED).body("用户已成功保存");
+            securityService.saveUser(userDTO, role);
+            return ResponseEntity.status(HttpStatus.CREATED).body("User successfully created");
         } catch (UserAlreadyExistsException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         } catch (Exception e) {
-            logger.error("保存用户时出错: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("保存用户时发生错误");
+            logger.error("Error saving user: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error occurred while saving user");
         }
     }
 

@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.example.demo.Dao.CompanionDao;
+import com.example.demo.model.User;
+import com.example.demo.model.UserImpl.Companion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -22,17 +25,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.demo.Dao.TransactionUserDao;
+import com.example.demo.Dao.PatientDao;
 import com.example.demo.Dao.UserRoleDao;
 import com.example.demo.exception.PasswordNotCorrectException;
 import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
-import com.example.demo.model.DTO.TransactionUserDTO;
+import com.example.demo.model.DTO.UserDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.Redis.RedisUser;
 import com.example.demo.model.Security.UserDetail;
-import com.example.demo.model.TransactionUser;
+import com.example.demo.model.UserImpl.Patient;
 import com.example.demo.model.UserRole;
 import com.example.demo.utility.JWT.JwtUtil;
 import com.example.demo.model.Security.LoginVo;
@@ -41,16 +44,17 @@ import com.example.demo.model.Security.LoginVo;
 public class SecurityService {
     private static final Logger logger = LoggerFactory.getLogger(SecurityService.class);
     private final PasswordEncoder passwordEncoder;
-    private final TransactionUserDao transactionUserDao;
+    private final PatientDao patientDao;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
     private final UserRoleDao userRoleDao;
-
+    @Autowired private CompanionDao companionDao;
+    @Autowired private PatientDao userDao;
     @Autowired
-    public SecurityService(PasswordEncoder passwordEncoder, TransactionUserDao transactionUserDao, AuthenticationManager authenticationManager, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, UserRoleDao userRoleDao) {
+    public SecurityService(PasswordEncoder passwordEncoder, PatientDao patientDao, AuthenticationManager authenticationManager, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, UserRoleDao userRoleDao) {
         this.passwordEncoder = passwordEncoder;
-        this.transactionUserDao = transactionUserDao;
+        this.patientDao = patientDao;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
@@ -58,21 +62,32 @@ public class SecurityService {
     }
 
     @Transactional
-    public void saveUser(TransactionUserDTO userDTO) {
-        if (transactionUserDao.findByUsername(userDTO.getUsername()).isPresent()) {
-            throw new UserAlreadyExistsException("User already exists");
+    public void saveUser(UserDTO userDTO, String role) {
+//        if (userDao.(userDTO.getUsername()).isPresent()) {
+//            throw new UserAlreadyExistsException("User already exists");
+//        }
+
+        UserRole userRole = userRoleDao.findByRole("ROLE_" + role.toUpperCase())
+                .orElseThrow(() -> new RuntimeException("User role not found"));
+
+        User user;
+        if ("PATIENT".equalsIgnoreCase(role)) {
+            user = new Patient();
+        } else if ("COMPANION".equalsIgnoreCase(role)) {
+            user = new Companion();
+        } else {
+            throw new IllegalArgumentException("Invalid role");
         }
-        
-        userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 
-        UserRole userRole = userRoleDao.findByRole("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("Default user role not found"));
-
-        TransactionUser user = new TransactionUser();
         BeanUtils.copyProperties(userDTO, user);
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         user.setRole(userRole);
 
-        transactionUserDao.save(user);
+        if (user instanceof Patient) {
+            patientDao.save((Patient) user);
+        } else {
+            companionDao.save((Companion) user);
+        }
     }
 
     //Login
@@ -83,33 +98,33 @@ public class SecurityService {
             Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
             UserDetail userDetail = (UserDetail) authentication.getPrincipal();
-            TransactionUser transactionUser = userDetail.getTransactionUser();
+            Patient patient = userDetail.getPatient();
 
             // **生成token
-            String token = jwtUtil.generateToken(transactionUser.getId(), transactionUser.getUsername(), transactionUser.getRole().getRoleName());
+            String token = jwtUtil.generateToken(patient.getId(), patient.getUsername(), patient.getRole().getRoleName());
 
 
             // **Redis 部分
             // 获取用户账户信息
-            List<Account> accounts = transactionUser.getAccounts();
+            List<Account> accounts = patient.getAccounts();
             // 创建redisUser并存入Redis
             RedisUser redisUser = new RedisUser(
-                transactionUser.getId(),
-                transactionUser.getUsername(),
-                transactionUser.getEmail(),
-                transactionUser.getPhone(),
-                transactionUser.getAvatar(),
+                patient.getId(),
+                patient.getUsername(),
+                patient.getEmail(),
+                patient.getPhone(),
+                patient.getAvatar(),
                 token
             );
 
-            String redisUserKey = "login_user:" + transactionUser.getId() + ":info";
+            String redisUserKey = "login_user:" + patient.getId() + ":info";
             redisTemplate.opsForValue().set(redisUserKey, redisUser, 1, TimeUnit.HOURS);
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
-            response.put("username", transactionUser.getUsername());
+            response.put("username", patient.getUsername());
 
             // 在创建 redisUser 后，添加以下代码
-            String userAccountsKey = "login_user:" + transactionUser.getId() + ":account:" + "initial placeholder";
+            String userAccountsKey = "login_user:" + patient.getId() + ":account:" + "initial placeholder";
             if (accounts.isEmpty()) {
                 // 如果用户没有账户，设置一个空列表
                 redisTemplate.opsForValue().set(userAccountsKey, new ArrayList<>(), 1, TimeUnit.HOURS);
@@ -120,13 +135,13 @@ public class SecurityService {
 
                 // 原有的账户信息保存逻辑
                 for (Account account : accounts) {
-                    String redisAccountKey = "login_user:" + transactionUser.getId() + ":account:" + account.getId();
+                    String redisAccountKey = "login_user:" + patient.getId() + ":account:" + account.getId();
                     RedisAccount redisAccount = new RedisAccount(
                             account.getId(),
                             account.getAccountName(),
                             account.getTotalIncome(),
                             account.getTotalExpense(),
-                            account.getTransactionRecords()
+                            account.getHealthRecords()
                     );
                     redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
                 }
@@ -148,7 +163,7 @@ public class SecurityService {
     public void updatePassword(String token, Map<String, String> oldAndNewPwd) throws UserNotFoundException, PasswordNotCorrectException {
         token = token.replace("Bearer ", "");
         Long userId = jwtUtil.getUserIdFromToken(token);
-        TransactionUser user = transactionUserDao.findById(userId)
+        Patient user = patientDao.findById(userId)
             .orElseThrow(() -> new UserNotFoundException("用户未找到"));
 
         String oldPassword = oldAndNewPwd.get("oldpassword");
@@ -162,6 +177,6 @@ public class SecurityService {
         // 加密新密码
         String encodedNewPassword = passwordEncoder.encode(newPassword);
         user.setPassword(encodedNewPassword);
-        transactionUserDao.save(user);
+        patientDao.save(user);
     }
 }

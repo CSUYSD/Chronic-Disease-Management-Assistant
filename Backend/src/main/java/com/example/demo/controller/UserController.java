@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import java.util.List;
 import java.util.Optional;
 
+import com.example.demo.model.User;
 import org.hibernate.validator.constraints.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,29 +23,29 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.exception.UserNotFoundException;
-import com.example.demo.model.DTO.TransactionUserDTO;
-import com.example.demo.model.TransactionUser;
-import com.example.demo.service.TransactionUserService;
+import com.example.demo.model.DTO.UserDTO;
+import com.example.demo.model.UserImpl.Patient;
+import com.example.demo.service.UserService;
 import com.example.demo.utility.RabbitMQProducer;
 
 @RestController
 @RequestMapping("/users")
-public class TransactionUserController {
-    private static final Logger logger = LoggerFactory.getLogger(TransactionUserController.class);
+public class UserController {
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
-    private final TransactionUserService transactionUserService;
+    private final UserService userService;
 
     @Autowired
-    public TransactionUserController(TransactionUserService transactionUserService) {
-        this.transactionUserService = transactionUserService;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
     @Autowired
     private RabbitMQProducer rabbitMQProducer;
 
     @GetMapping("/allusers")
-    public ResponseEntity<List<TransactionUser>> getAllUsers() {
-        List<TransactionUser> users = transactionUserService.findAll();
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userService.findAll();
         if (!users.isEmpty()) {
             return ResponseEntity.ok(users);
         } else {
@@ -53,21 +54,21 @@ public class TransactionUserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TransactionUser> getUserById(@PathVariable Long id) {
-        Optional<TransactionUser> userOptional = transactionUserService.findById(id);
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        Optional<User> userOptional = userService.findById(id);
         return userOptional.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @GetMapping("/username/{username}")
-    public ResponseEntity<TransactionUser> getUserByUsername(@PathVariable String username) {
-        Optional<TransactionUser> userOptional = transactionUserService.findByUsername(username);
+    public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
+        Optional<User> userOptional = userService.findByUsername(username);
         return userOptional.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody TransactionUser transactionUserDetails) {
+    public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody Patient patientDetails) {
         try {
-            transactionUserService.updateUser(id, transactionUserDetails);
+            userService.updateUser(id, patientDetails);
             return ResponseEntity.ok("User updated successfully");
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -81,7 +82,7 @@ public class TransactionUserController {
     @DeleteMapping("delete/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         try {
-            transactionUserService.deleteUser(id);
+            userService.deleteUser(id);
             return ResponseEntity.status(HttpStatus.OK).body("User deleted successfully");
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -96,11 +97,11 @@ public class TransactionUserController {
 
 
     @GetMapping("/info")
-    public ResponseEntity<TransactionUserDTO> getCurrentUserInfo(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<UserDTO> getCurrentUserInfo(@RequestHeader("Authorization") String token) {
         if (token == null || token.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
-        TransactionUserDTO user_info = transactionUserService.getUserInfoByUserId(token).orElse(null);
+        UserDTO user_info = userService.getUserInfoByUserId(token).orElse(null);
         if (user_info == null ) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
@@ -111,7 +112,7 @@ public class TransactionUserController {
     @PatchMapping("/updateAvatar")
     public ResponseEntity<String> updateAvatar(@RequestHeader("Authorization") String token, @URL String avatar) {
         try {
-            transactionUserService.updateAvatar(token, avatar);
+            userService.updateAvatar(token, avatar);
             return ResponseEntity.ok("Avatar updated successfully");
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

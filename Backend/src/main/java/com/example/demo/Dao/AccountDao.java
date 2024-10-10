@@ -1,25 +1,24 @@
 package com.example.demo.Dao;
 
 
-import com.example.demo.model.TransactionUser;
-import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+import java.util.Optional;
 
-import com.example.demo.model.Account;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-
-import java.util.List;
-import java.util.Optional;
+import com.example.demo.model.Account;
+import com.example.demo.model.UserImpl.Patient;
 
 @Repository
 public interface AccountDao extends JpaRepository<Account, Long> {
 
-    @Query("SELECT a.id FROM Account a WHERE a.transactionUser.id = ?1 AND a.accountName = ?2")
-    Optional<Long> getAccountIDByUserIdAndAccountName(Long userId, String accountName);
+    @Query("SELECT a.id FROM Account a WHERE a.accountName = ?1 AND a.patient.id = ?2")
+    Optional<Long> findAccountIdByAccountNameAndPatientId(String accountName, Long patientId);
 
-    List<Account> findByTransactionUser(TransactionUser user);
+    List<Account> findByPatient(Patient patient);
 
-    @Query(value = "SELECT a.id FROM Account a WHERE a.accountName = ?1 AND a.transactionUser.id = ?2")
+    @Query(value = "SELECT a.id FROM Account a WHERE a.accountName = ?1 AND a.patient.id = ?2")
     Long findAccountIdByAccountNameAndTransactionUserId(String accountName, Long userId);
 }
