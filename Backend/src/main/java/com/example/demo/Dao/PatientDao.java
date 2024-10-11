@@ -9,5 +9,6 @@ import com.example.demo.model.UserImpl.Patient;
 
 public interface PatientDao extends JpaRepository<Patient, Long> {
     public Optional<Patient> findPatientByUsername(String username);
+    Optional<Object> findByRandomString(String randomString);
 }
 

@@ -13,4 +13,8 @@ public class Companion extends User {
     @OneToOne
     @JoinColumn(name = "patient_id")
     private Patient patient;
+
+    public void setPatient(Patient patient) {
+        this.patient = patient;
+    }
 }
