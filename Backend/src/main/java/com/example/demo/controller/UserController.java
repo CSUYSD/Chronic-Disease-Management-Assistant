@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import com.example.demo.model.User;
 import com.example.demo.service.CompanionService;
+import com.example.demo.service.PatientService;
 import org.hibernate.validator.constraints.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,11 +28,13 @@ public class UserController {
 
     private final UserService userService;
     private final CompanionService companionService;
+    private final PatientService patientService;
 
     @Autowired
-    public UserController(UserService userService, CompanionService companionService) {
+    public UserController(UserService userService, CompanionService companionService, PatientService patientService) {
         this.userService = userService;
         this.companionService = companionService;
+        this.patientService = patientService;
     }
 
     @Autowired
@@ -123,9 +126,22 @@ public class UserController {
         return message;
     }
 
+    @GetMapping("/randomString/{id}")
+    public ResponseEntity<String> getRandomString(@PathVariable Long id) {
+        try {
+            String randomString = patientService.getRandomStringById(id); // 调用 PatientService 获取 randomString
+            return ResponseEntity.ok(randomString);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("获取 randomString 过程中发生错误: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("获取 randomString 过程中发生错误");
+        }
+    }
+
     @PostMapping("/bindCompanion")
-    public ResponseEntity<String> bindCompanion(@RequestParam Long companionId, @RequestParam String encryptedPatientId) {
-        boolean success = companionService.bindCompanionToPatient(companionId, encryptedPatientId);
+    public ResponseEntity<String> bindCompanion(@RequestParam Long companionId, @RequestParam String randomString) {
+        boolean success = companionService.bindCompanionToPatient(companionId, randomString);
         if (success) {
             return ResponseEntity.ok("Companion bound to patient successfully");
         } else {
