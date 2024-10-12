@@ -7,11 +7,7 @@ import com.example.demo.model.Account;
 import com.example.demo.model.User;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "patients")
@@ -23,6 +19,17 @@ public class Patient extends User {
 
         @OneToOne(mappedBy = "patient")
         private Companion companion;
+
+        @Column(name = "random_string")
+        private String randomString;
+
+        public String getRandomString() {
+                return randomString;
+        }
+
+        public void setRandomString(String randomString) {
+                this.randomString = randomString;
+        }
 
         // 确保有 getter 方法
         public List<Account> getAccounts() {

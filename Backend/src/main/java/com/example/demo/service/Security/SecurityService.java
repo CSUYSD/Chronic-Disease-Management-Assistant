@@ -1,9 +1,6 @@
 package com.example.demo.service.Security;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -73,6 +70,8 @@ public class SecurityService {
         User user;
         if ("PATIENT".equalsIgnoreCase(role)) {
             user = new Patient();
+            String randomCode = UUID.randomUUID().toString();
+            ((Patient) user).setRandomString(randomCode);
         } else if ("COMPANION".equalsIgnoreCase(role)) {
             user = new Companion();
         } else {
