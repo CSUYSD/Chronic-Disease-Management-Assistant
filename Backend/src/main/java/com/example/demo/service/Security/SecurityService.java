@@ -46,23 +46,26 @@ public class SecurityService {
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
     private final UserRoleDao userRoleDao;
-    @Autowired private CompanionDao companionDao;
-    @Autowired private PatientDao userDao;
+    private final CompanionDao companionDao;
+    private final PatientDao userDao;
+
     @Autowired
-    public SecurityService(PasswordEncoder passwordEncoder, PatientDao patientDao, AuthenticationManager authenticationManager, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, UserRoleDao userRoleDao) {
+    public SecurityService(PasswordEncoder passwordEncoder, PatientDao patientDao, AuthenticationManager authenticationManager, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, UserRoleDao userRoleDao, CompanionDao companionDao, PatientDao userDao) {
         this.passwordEncoder = passwordEncoder;
         this.patientDao = patientDao;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.userRoleDao = userRoleDao;
+        this.companionDao = companionDao;
+        this.userDao = userDao;
     }
 
     @Transactional
     public void saveUser(UserDTO userDTO, String role) {
-//        if (userDao.(userDTO.getUsername()).isPresent()) {
-//            throw new UserAlreadyExistsException("User already exists");
-//        }
+        if (userDao.findByUsername(userDTO.getUsername()).isPresent()) {
+            throw new UserAlreadyExistsException("User already exists");
+        }
 
         UserRole userRole = userRoleDao.findByRole("ROLE_" + role.toUpperCase())
                 .orElseThrow(() -> new RuntimeException("User role not found"));
@@ -89,66 +92,35 @@ public class SecurityService {
         }
     }
 
-    //Login
     public ResponseEntity<Map<String, Object>> login(LoginVo loginVo) {
         logger.info("尝试登录用户: {}", loginVo.getUsername());
         try {
-            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginVo.getUsername(), loginVo.getPassword());
+            UsernamePasswordAuthenticationToken authenticationToken =
+                    new UsernamePasswordAuthenticationToken(loginVo.getUsername(), loginVo.getPassword());
             Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
             UserDetail userDetail = (UserDetail) authentication.getPrincipal();
-            Patient patient = userDetail.getPatient();
+            User user = userDetail.getUser();
 
             // **生成token
-            String token = jwtUtil.generateToken(patient.getId(), patient.getUsername(), patient.getRole().getRoleName());
+            String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole().getRoleName());
 
-
-            // **Redis 部分
-            // 获取用户账户信息
-            List<Account> accounts = patient.getAccounts();
-            // 创建redisUser并存入Redis
-            RedisUser redisUser = new RedisUser(
-                patient.getId(),
-                patient.getUsername(),
-                patient.getEmail(),
-                patient.getPhone(),
-                patient.getAvatar(),
-                token
-            );
-
-            String redisUserKey = "login_user:" + patient.getId() + ":info";
-            redisTemplate.opsForValue().set(redisUserKey, redisUser, 1, TimeUnit.HOURS);
-            Map<String, Object> response = new HashMap<>();
-            response.put("token", token);
-            response.put("username", patient.getUsername());
-
-            // 在创建 redisUser 后，添加以下代码
-            String userAccountsKey = "login_user:" + patient.getId() + ":account:" + "initial placeholder";
-            if (accounts.isEmpty()) {
-                // 如果用户没有账户，设置一个空列表
-                redisTemplate.opsForValue().set(userAccountsKey, new ArrayList<>(), 1, TimeUnit.HOURS);
-            } else {
-                // 如果用户有账户，保存账户 ID 列表
-                List<Long> accountIds = accounts.stream().map(Account::getId).collect(Collectors.toList());
-                redisTemplate.opsForValue().set(userAccountsKey, accountIds, 1, TimeUnit.HOURS);
-
-                // 原有的账户信息保存逻辑
-                for (Account account : accounts) {
-                    String redisAccountKey = "login_user:" + patient.getId() + ":account:" + account.getId();
-                    RedisAccount redisAccount = new RedisAccount(
-                            account.getId(),
-                            account.getAccountName(),
-                            account.getTotalIncome(),
-                            account.getTotalExpense(),
-                            account.getHealthRecords()
-                    );
-                    redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
-                }
+            // **处理 Patient 逻辑
+            if ("ROLE_PATIENT".equals(user.getRole().getRoleName())) {
+                handlePatientLogin(userDetail, token);
             }
 
-            //**保存
+            // **Redis 存储基础信息
+            storeUserInRedis(user, token);
+
+            // **保存登录成功信息
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("username", user.getUsername());
+
             logger.info("用户 {} 登录成功", loginVo.getUsername());
             return ResponseEntity.ok(response);
+
         } catch (AuthenticationException e) {
             logger.error("用户 {} 登录失败: {}", loginVo.getUsername(), e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "用户名或密码错误"));
@@ -156,6 +128,46 @@ public class SecurityService {
             logger.error("登录过程中发生错误: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "登录过程中发生错误"));
         }
+    }
+
+    private void handlePatientLogin(UserDetail userDetail, String token) {
+        Patient patient = userDetail.getPatient();
+        List<Account> accounts = patient.getAccounts();
+
+        // 存储账户信息到 Redis
+        String userAccountsKey = "login_user:" + patient.getId() + ":account:" + "initial placeholder";
+        if (accounts.isEmpty()) {
+            redisTemplate.opsForValue().set(userAccountsKey, new ArrayList<>(), 1, TimeUnit.HOURS);
+        } else {
+            List<Long> accountIds = accounts.stream().map(Account::getId).collect(Collectors.toList());
+            redisTemplate.opsForValue().set(userAccountsKey, accountIds, 1, TimeUnit.HOURS);
+
+            for (Account account : accounts) {
+                String redisAccountKey = "login_user:" + patient.getId() + ":account:" + account.getId();
+                RedisAccount redisAccount = new RedisAccount(
+                        account.getId(),
+                        account.getAccountName(),
+                        account.getTotalIncome(),
+                        account.getTotalExpense(),
+                        account.getHealthRecords()
+                );
+                redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
+            }
+        }
+    }
+
+    private void storeUserInRedis(User user, String token) {
+        RedisUser redisUser = new RedisUser(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getAvatar(),
+                token
+        );
+
+        String redisUserKey = "login_user:" + user.getId() + ":info";
+        redisTemplate.opsForValue().set(redisUserKey, redisUser, 1, TimeUnit.HOURS);
     }
 
     // update password

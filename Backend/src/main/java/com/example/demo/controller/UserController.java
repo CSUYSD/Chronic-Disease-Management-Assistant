@@ -1,11 +1,13 @@
 package com.example.demo.controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.example.demo.model.User;
 import com.example.demo.service.CompanionService;
 import com.example.demo.service.PatientService;
+import com.example.demo.utility.JWT.JwtUtil;
 import org.hibernate.validator.constraints.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,12 +31,14 @@ public class UserController {
     private final UserService userService;
     private final CompanionService companionService;
     private final PatientService patientService;
+    private final JwtUtil jwtUtil;
 
     @Autowired
-    public UserController(UserService userService, CompanionService companionService, PatientService patientService) {
+    public UserController(UserService userService, CompanionService companionService, PatientService patientService, JwtUtil jwtUtil) {
         this.userService = userService;
         this.companionService = companionService;
         this.patientService = patientService;
+        this.jwtUtil = jwtUtil;
     }
 
     @Autowired
@@ -140,7 +144,11 @@ public class UserController {
     }
 
     @PostMapping("/bindCompanion")
-    public ResponseEntity<String> bindCompanion(@RequestParam Long companionId, @RequestParam String randomString) {
+    public ResponseEntity<String> bindCompanion(@RequestHeader("Authorization") String token, @RequestBody Map<String, String> requestBody) {
+
+        Long companionId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        String randomString = requestBody.get("randomString");
+
         boolean success = companionService.bindCompanionToPatient(companionId, randomString);
         if (success) {
             return ResponseEntity.ok("Companion bound to patient successfully");

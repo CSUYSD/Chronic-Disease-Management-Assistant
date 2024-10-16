@@ -32,18 +32,27 @@ public class CompanionService {
 
     public boolean bindCompanionToPatient(Long companionId, String randomString) {
         try {
-            // 查找 Companion 和 Patient
+            // 查找 Companion
             Companion companion = companionDao.findById(companionId).orElse(null);
-            Patient patient = (Patient) patientDao.findByRandomString(randomString).orElse(null);
-
-            if (companion != null && patient != null) {
-                companion.setPatient(patient);
-                companionDao.save(companion);
-                return true;
+            if (companion == null) {
+                logger.error("未找到 ID 为 {} 的 Companion", companionId);
+                return false;
             }
+
+            // 查找 Patient
+            Patient patient = (Patient) patientDao.findByRandomString(randomString).orElse(null);
+            if (patient == null) {
+                logger.error("未找到随机码为 {} 的 Patient", randomString);
+                return false;
+            }
+
+            // 绑定 Companion 到 Patient
+            companion.setPatient(patient);
+            companionDao.save(companion);
+            return true;
         } catch (Exception e) {
             logger.error("绑定失败: ", e);
+            return false;
         }
-        return false;
     }
 }

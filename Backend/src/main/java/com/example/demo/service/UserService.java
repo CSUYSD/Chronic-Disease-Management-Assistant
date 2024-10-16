@@ -149,6 +149,7 @@ public class UserService {
         userDTO.setEmail(user.getEmail());
         userDTO.setPhone(user.getPhone());
         userDTO.setAvatar(user.getAvatar());
+        userDTO.setRole(user.getRole().getRoleName());
         List<Account> accounts = user.getAccounts();
         for (Account account : accounts) {
             userDTO.getAccountName().add(account.getAccountName());
