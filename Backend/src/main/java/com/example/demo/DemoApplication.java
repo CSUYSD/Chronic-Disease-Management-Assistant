@@ -34,6 +34,7 @@ public class DemoApplication {
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		return objectMapper;
 	}
+
 	@Value("${spring.ai.openai.api-key}")
 	private String openAiApiKey;
 

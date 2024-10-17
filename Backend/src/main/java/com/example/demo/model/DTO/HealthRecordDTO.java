@@ -12,11 +12,12 @@ import java.time.ZonedDateTime;
 @Data
 @NoArgsConstructor
 public class HealthRecordDTO {
-    @Digits(integer = 3, fraction = 0, message = "SBP must be a numeric value with up to 3 digits")
-    private Integer SBP; // Systolic Blood Pressure, up to 3 digits
 
-    @Digits(integer = 3, fraction = 0, message = "DBP must be a numeric value with up to 3 digits")
-    private Integer DBP; // Diastolic Blood Pressure, up to 3 digits
+    @NotNull(message = "Systolic Blood Pressure cannot be null")
+    private Integer sbp; // Systolic Blood Pressure, up to 3 digits
+
+    @NotNull(message = "Diastolic Blood Pressure cannot be null")
+    private Integer dbp; // Diastolic Blood Pressure, up to 3 digits
 
     @Pattern(regexp = "YES|NO", message = "Headache status must be 'YES' or 'NO'")
     private String isHeadache; // Headache
