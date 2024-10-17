@@ -5,7 +5,7 @@ import com.example.demo.Dao.PatientDao;
 import com.example.demo.Dao.UserDao;
 import com.example.demo.model.UserImpl.Companion;
 import com.example.demo.model.UserImpl.Patient;
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.utility.jwt.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

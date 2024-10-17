@@ -2,9 +2,10 @@ package com.example.demo.controller;
 
 import java.util.List;
 
-import com.example.demo.model.DTO.HealthRecordDTO;
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.model.dto.HealthRecordDTO;
+import com.example.demo.utility.jwt.JwtUtil;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -26,6 +27,7 @@ public class RecordController {
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
+
     public RecordController(RecordService recordService, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
         this.recordService = recordService;
         this.jwtUtil = jwtUtil;
@@ -42,7 +44,8 @@ public class RecordController {
 
     @Transactional
     @PostMapping("/create")
-    public ResponseEntity<String> addHealthRecord(@RequestHeader("Authorization") String token, @RequestBody HealthRecordDTO healthRecordDTO) {
+    public ResponseEntity<String> addHealthRecord(@RequestHeader("Authorization") String token, @Valid @RequestBody HealthRecordDTO healthRecordDTO) {
+        System.out.println("Received HealthRecordDTO: " + healthRecordDTO);
         if (token == null || token.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未提供令牌");
         }
@@ -50,6 +53,7 @@ public class RecordController {
             recordService.addHealthRecord(token, healthRecordDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body("Health record has been created successfully.");
         } catch (Exception e) {
+            System.out.println(healthRecordDTO);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error creating health record: " + e.getMessage());
         }
     }
@@ -85,7 +89,7 @@ public class RecordController {
     }
 
     @GetMapping("/recent")
-    public ResponseEntity<List<HealthRecord>> getCertainDaysRecord(@RequestHeader("Authorization") String token, @RequestParam int duration) {
+    public ResponseEntity<List<HealthRecordDTO>> getCertainDaysRecord(@RequestHeader("Authorization") String token, @RequestParam int duration) {
         if (duration < 1 || duration >= 30) {
             return ResponseEntity.badRequest().build();
         }
@@ -93,7 +97,7 @@ public class RecordController {
             Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
             String pattern = "login_user:" + userId + ":current_account";
             String accountId = stringRedisTemplate.opsForValue().get(pattern);
-            List<HealthRecord> records = recordService.getCertainDaysRecords(Long.valueOf(accountId), duration);
+            List<HealthRecordDTO> records = recordService.getCertainDaysRecords(Long.valueOf(accountId), duration);
             return ResponseEntity.ok(records);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();

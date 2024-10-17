@@ -39,30 +39,18 @@ public class MessageController {
                 .content();
     }
 
-    @PostMapping(value = "/chat/stream/test", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chatStreamTest(@RequestParam String prompt, @RequestParam String sessionId) {
-        MessageChatMemoryAdvisor messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory, sessionId, 10);
-        return ChatClient.create(openAiChatModel).prompt()
-                .user(prompt)
-                .advisors(messageChatMemoryAdvisor)
-                .stream()
-                .content();
-    }
-
-
     //streaming chat with memory use SSE pipeline.
     @GetMapping(value = "/chat/stream/history", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatStream(@RequestParam String prompt, @RequestParam String sessionId) {
         MessageChatMemoryAdvisor messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory, sessionId, 10);
         return ChatClient.create(openAiChatModel).prompt()
-                .messages(new SystemMessage("you are a finance management helper"), new UserMessage(prompt))
+                .user(prompt)
                 .advisors(messageChatMemoryAdvisor)
                 .stream() //流式返回
                 .content().map(chatResponse -> ServerSentEvent.builder(chatResponse)
                         .event("message")
                         .build());
     }
-
 
     @SneakyThrows
     private String toJsonString(ChatResponse chatResponse) {
