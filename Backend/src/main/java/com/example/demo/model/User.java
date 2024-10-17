@@ -9,12 +9,16 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
 @Data
+@NoArgsConstructor  // JPA要求实体类具有无参构造函数
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
+@Table(name = "users")  // 避免使用保留字
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,4 +43,8 @@ public class User {
     @ManyToOne
     @JoinColumn(name = "role_id")
     private UserRole role;
+
+    public UserRole getRole() {
+        return role;
+    }
 }

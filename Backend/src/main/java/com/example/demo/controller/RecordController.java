@@ -1,10 +1,13 @@
 package com.example.demo.controller;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 import com.example.demo.model.DTO.HealthRecordDTO;
 import com.example.demo.utility.JWT.JwtUtil;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -26,6 +29,7 @@ public class RecordController {
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
+
     public RecordController(RecordService recordService, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
         this.recordService = recordService;
         this.jwtUtil = jwtUtil;
@@ -42,7 +46,8 @@ public class RecordController {
 
     @Transactional
     @PostMapping("/create")
-    public ResponseEntity<String> addHealthRecord(@RequestHeader("Authorization") String token, @RequestBody HealthRecordDTO healthRecordDTO) {
+    public ResponseEntity<String> addHealthRecord(@RequestHeader("Authorization") String token, @Valid @RequestBody HealthRecordDTO healthRecordDTO) {
+        System.out.println("Received HealthRecordDTO: " + healthRecordDTO);
         if (token == null || token.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未提供令牌");
         }
@@ -50,6 +55,7 @@ public class RecordController {
             recordService.addHealthRecord(token, healthRecordDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body("Health record has been created successfully.");
         } catch (Exception e) {
+            System.out.println(healthRecordDTO);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error creating health record: " + e.getMessage());
         }
     }

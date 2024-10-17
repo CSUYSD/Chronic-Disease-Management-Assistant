@@ -22,9 +22,11 @@ import java.util.Collections;
 @Service
 public class UserDetailService implements UserDetailsService {
     @Autowired
+    private final JwtUtil jwtUtil;
     private final UserDao userDao;
 
-    public UserDetailService(UserDao userDao) {
+    public UserDetailService(JwtUtil jwtUtil, UserDao userDao) {
+        this.jwtUtil = jwtUtil;
         this.userDao = userDao;
     }
 
@@ -45,10 +47,14 @@ public class UserDetailService implements UserDetailsService {
 
     private UserDetails createUserDetails(User user) {
         UserRole userRole = user.getRole();
-        Collection<? extends GrantedAuthority> authorities = 
-            Collections.singleton(new SimpleGrantedAuthority(userRole.getRoleName()));
-        return new org.springframework.security.core.userdetails.User(
-            user.getUsername(), user.getPassword(), authorities);
+        Collection<? extends GrantedAuthority> authorities =
+                Collections.singleton(new SimpleGrantedAuthority(userRole.getRoleName()));
+
+        // 返回自定义的 UserDetail 实例
+        return new UserDetail(user, authorities);
+
+
+
     }
 
 

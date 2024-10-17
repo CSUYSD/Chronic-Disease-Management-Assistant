@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import java.util.List;
 
+import com.example.demo.utility.DtoParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -56,15 +57,7 @@ public class RecordService {
         Patient patient = patientDao.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Patient not found for id: " + userId));
 
-        HealthRecord healthRecord = new HealthRecord();
-        healthRecord.setSBP(healthRecordDTO.getSBP());
-        healthRecord.setDBP(healthRecordDTO.getDBP());
-        healthRecord.setIsHeadache(healthRecordDTO.getIsHeadache());
-        healthRecord.setIsBackPain(healthRecordDTO.getIsBackPain());
-        healthRecord.setIsChestPain(healthRecordDTO.getIsChestPain());
-        healthRecord.setIsLessUrination(healthRecordDTO.getIsLessUrination());
-        healthRecord.setImportTime(healthRecordDTO.getImportTime());
-        healthRecord.setDescription(healthRecordDTO.getDescription());
+        HealthRecord healthRecord = DtoParser.toHealthRecord(healthRecordDTO);
         healthRecord.setAccount(account);
         healthRecord.setUserId(userId);
 
@@ -76,8 +69,8 @@ public class RecordService {
         HealthRecord existingRecord = recordDao.findById(id)
                 .orElseThrow(() -> new RuntimeException("Health record not found for id: " + id));
 
-        existingRecord.setSBP(healthRecordDTO.getSBP());
-        existingRecord.setDBP(healthRecordDTO.getDBP());
+        existingRecord.setSbp(healthRecordDTO.getSbp());
+        existingRecord.setDbp(healthRecordDTO.getDbp());
         existingRecord.setIsHeadache(healthRecordDTO.getIsHeadache());
         existingRecord.setIsBackPain(healthRecordDTO.getIsBackPain());
         existingRecord.setIsChestPain(healthRecordDTO.getIsChestPain());
