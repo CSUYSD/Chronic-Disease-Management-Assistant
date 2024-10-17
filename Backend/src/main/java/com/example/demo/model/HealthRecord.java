@@ -10,12 +10,15 @@ import lombok.Data;
 
 @Entity
 @Data
+@Table(name = "health_records")
 public class HealthRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    private Integer SBP;//高压
-    private Integer DBP;//低压
+    @Column(name = "sbp")
+    private Integer sbp;//高压
+    @Column(name = "dbp")
+    private Integer dbp;//低压
     private String isHeadache;//头痛
     private String isBackPain;//背痛
     private String isChestPain; //胸痛

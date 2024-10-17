@@ -1,13 +1,13 @@
-package com.example.demo.utility;
+package com.example.demo.utility.parser;
 
-import com.example.demo.model.DTO.HealthRecordDTO;
+import com.example.demo.model.dto.HealthRecordDTO;
 import com.example.demo.model.HealthRecord;
 
 public class DtoParser {
     public static HealthRecord toHealthRecord(HealthRecordDTO healthRecordDTO) {
         HealthRecord healthRecord = new HealthRecord();
-        healthRecord.setSBP(healthRecordDTO.getSBP());
-        healthRecord.setDBP(healthRecordDTO.getDBP());
+        healthRecord.setSbp(healthRecordDTO.getSbp());
+        healthRecord.setDbp(healthRecordDTO.getDbp());
         healthRecord.setIsHeadache(healthRecordDTO.getIsHeadache());
         healthRecord.setIsBackPain(healthRecordDTO.getIsBackPain());
         healthRecord.setIsChestPain(healthRecordDTO.getIsChestPain());
@@ -19,8 +19,8 @@ public class DtoParser {
 
     public static HealthRecordDTO toHealthRecordDTO(HealthRecord healthRecord) {
         HealthRecordDTO dto = new HealthRecordDTO();
-        dto.setSBP(healthRecord.getSBP());
-        dto.setDBP(healthRecord.getDBP());
+        dto.setSbp(healthRecord.getSbp());
+        dto.setDbp(healthRecord.getDbp());
         dto.setIsHeadache(healthRecord.getIsHeadache());
         dto.setIsBackPain(healthRecord.getIsBackPain());
         dto.setIsChestPain(healthRecord.getIsChestPain());

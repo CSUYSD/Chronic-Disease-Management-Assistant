@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;
-import com.example.demo.model.DTO.UserDTO;
-import com.example.demo.service.Security.SecurityService;
-import com.example.demo.service.Security.UserDetailService;
+import com.example.demo.model.dto.UserDTO;
+import com.example.demo.service.security.SecurityService;
+import com.example.demo.service.security.UserDetailService;
 
 
 import jakarta.validation.Valid;

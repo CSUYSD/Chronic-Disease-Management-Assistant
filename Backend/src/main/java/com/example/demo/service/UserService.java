@@ -18,12 +18,12 @@ import com.example.demo.Dao.PatientDao;
 import com.example.demo.Dao.UserDao;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
-import com.example.demo.model.DTO.UserDTO;
+import com.example.demo.model.dto.UserDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.Redis.RedisUser;
 import com.example.demo.model.User;
 import com.example.demo.model.UserImpl.Patient;
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.utility.jwt.JwtUtil;
 
 @Service
 public class UserService {

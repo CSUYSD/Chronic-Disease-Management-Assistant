@@ -35,16 +35,6 @@ public class DocumentController {
     private final OpenAiChatModel openAiChatModel;
     private final ChatMemory chatMemory = new InMemoryChatMemory();
 
-    @SneakyThrows
-    @PostMapping("etl/test/multipart")
-    public String readForMultiPart(@RequestParam MultipartFile file) {
-        Resource resource = new InputStreamResource(file.getInputStream());
-        TikaDocumentReader reader = new TikaDocumentReader(resource);
-        return reader
-                .read()
-                .get(0)
-                .getContent();
-    }
 
     @SneakyThrows
     @PostMapping("etl/read/local")

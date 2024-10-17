@@ -1,7 +1,7 @@
-package com.example.demo.service.Security;
+package com.example.demo.service.security;
 
 import com.example.demo.model.User;
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.utility.jwt.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -10,9 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import com.example.demo.Dao.PatientDao;
 import com.example.demo.Dao.UserDao;
-import com.example.demo.model.UserImpl.Patient;
 import com.example.demo.model.Security.UserDetail;
 import com.example.demo.model.UserRole;
 
