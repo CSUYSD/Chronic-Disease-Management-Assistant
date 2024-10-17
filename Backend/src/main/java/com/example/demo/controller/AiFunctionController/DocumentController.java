@@ -67,7 +67,7 @@ public class DocumentController {
     }
 
     @SneakyThrows
-    @PostMapping(value = "chat/stream/database", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(value = "chat/stream/database", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatStreamWithDatabase(@RequestParam String prompt, @RequestParam String sessionId) {
         // 1. 定义提示词模板，question_answer_context会被替换成向量数据库中查询到的文档。
         String promptWithContext = """

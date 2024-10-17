@@ -4,13 +4,15 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Loader2, Send, Bot, User, Paperclip, X, Lightbulb, Plus, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
+import { Loader2, Send, Bot, User, Paperclip, X, Lightbulb, Plus, MoreHorizontal, MessageSquare, ChevronDown } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { FluxMessageWithHistoryAPI, UploadFileAPI, ClearFileAPI, ChatWithFileAPI } from '@/api/ai'
+
 
 interface Message {
     id: number
@@ -38,7 +40,6 @@ export default function AiChatPage() {
     const [input, setInput] = useState('')
     const [isTyping, setIsTyping] = useState(false)
     const [files, setFiles] = useState<File[]>([])
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const [isRenaming, setIsRenaming] = useState(false)
     const [newChatName, setNewChatName] = useState('')
     const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -64,6 +65,7 @@ export default function AiChatPage() {
 
         if (files.length > 0) {
             newMessage.file = files[0]
+            await handleFileUpload(files[0])
         }
 
         const updatedChats = chats.map(chat =>
@@ -77,31 +79,99 @@ export default function AiChatPage() {
         setFiles([])
         setIsTyping(true)
 
-        // Simulated AI reply
-        setTimeout(() => {
+        try {
+            let response;
+            if (files.length > 0) {
+                response = await ChatWithFileAPI(new URLSearchParams({
+                    prompt: input,
+                    sessionId: currentChatId.toString()
+                }))
+            } else {
+                response = await FluxMessageWithHistoryAPI({
+                    prompt: input,
+                    sessionId: currentChatId.toString()
+                })
+            }
+
+            const reader = response.data.getReader()
+            const decoder = new TextDecoder()
+            let aiResponse = ''
+
             const aiMessage: Message = {
                 id: currentChat.messages.length + 2,
-                text: "This is the AI assistant's reply. In a real application, this should be fetched from a backend API.",
+                text: '',
                 sender: 'ai'
             }
+
             const updatedChatsWithAiReply = updatedChats.map(chat =>
                 chat.id === currentChatId
                     ? { ...chat, messages: [...chat.messages, aiMessage] }
                     : chat
             )
             setChats(updatedChatsWithAiReply)
-            setIsTyping(false)
-        }, 2000)
-    }
 
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files) {
-            setFiles(Array.from(event.target.files))
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                const chunk = decoder.decode(value)
+                const lines = chunk.split('\n')
+
+                for (const line of lines) {
+                    if (line.startsWith('data:')) {
+                        const data = line.slice(5).trim()
+                        if (data !== '') {
+                            aiResponse += data + ' '
+                            setChats(prevChats =>
+                                prevChats.map(chat =>
+                                    chat.id === currentChatId
+                                        ? {
+                                            ...chat,
+                                            messages: chat.messages.map(msg =>
+                                                msg.id === aiMessage.id
+                                                    ? { ...msg, text: aiResponse.trim() }
+                                                    : msg
+                                            )
+                                        }
+                                        : chat
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error getting AI response:', error)
+            // 处理错误，可能显示一个错误消息给用户
+        } finally {
+            setIsTyping(false)
         }
     }
 
-    const removeFile = (index: number) => {
-        setFiles(files.filter((_, i) => i !== index))
+    const handleFileUpload = async (file: File) => {
+        const formData = new FormData()
+        formData.append('file', file)
+
+        try {
+            await UploadFileAPI(formData)
+            console.log('File uploaded successfully')
+            // 可能需要更新UI来显示文件上传成功
+        } catch (error) {
+            console.error('Error uploading file:', error)
+            // 处理错误，可能显示一个错误消息给用户
+        }
+    }
+
+    const clearFiles = async () => {
+        try {
+            await ClearFileAPI()
+            console.log('Files cleared successfully')
+            setFiles([])
+            // 更新UI以反映文件已被清除
+        } catch (error) {
+            console.error('Error clearing files:', error)
+            // 处理错误，可能显示一个错误消息给用户
+        }
     }
 
     const usePrompt = (prompt: string) => {
@@ -116,6 +186,7 @@ export default function AiChatPage() {
         }
         setChats([...chats, newChat])
         setCurrentChatId(newChat.id)
+        startRenaming(newChat)  // Open rename dialog immediately
     }
 
     const deleteChat = (id: number) => {
@@ -126,8 +197,9 @@ export default function AiChatPage() {
         }
     }
 
-    const startRenaming = (chat: Chat) => {
-        setNewChatName(chat.name)
+    const startRenaming = (chat?: Chat) => {
+        const targetChat = chat || currentChat
+        setNewChatName(targetChat.name)
         setIsRenaming(true)
     }
 
@@ -141,129 +213,118 @@ export default function AiChatPage() {
     }
 
     return (
-        <div className="flex h-full">
-            <AnimatePresence>
-                {isSidebarOpen && (
-                    <motion.div
-                        initial={{ x: -300, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: -300, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                        className="w-64 bg-white/80 backdrop-blur-sm shadow-xl"
-                    >
-                        <Card className="h-full">
-                            <CardHeader>
-                                <CardTitle className="text-xl font-bold text-gray-800 flex justify-between items-center">
-                                    Chats
-                                    <Button variant="ghost" size="sm" onClick={() => setIsSidebarOpen(false)}>
-                                        <ChevronLeft className="h-4 w-4" />
-                                    </Button>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <Button onClick={createNewChat} className="w-full mb-4">
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    New Chat
-                                </Button>
-                                <ScrollArea className="h-[calc(100vh-12rem)]">
-                                    <AnimatePresence>
-                                        {chats.map(chat => (
-                                            <motion.div
-                                                key={chat.id}
-                                                initial={{ opacity: 0, y: -20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: 20 }}
-                                                transition={{ duration: 0.2 }}
-                                                className="flex items-center mb-2"
-                                            >
-                                                <Button
-                                                    variant={chat.id === currentChatId ? "secondary" : "ghost"}
-                                                    className="w-full justify-start mr-2"
-                                                    onClick={() => setCurrentChatId(chat.id)}
-                                                >
-                                                    <Bot className="w-4 h-4 mr-2" />
-                                                    {chat.name}
-                                                </Button>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="sm">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent>
-                                                        <DropdownMenuItem onClick={() => startRenaming(chat)}>
-                                                            Rename
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => deleteChat(chat.id)}>
-                                                            Delete
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </motion.div>
-                                        ))}
-                                    </AnimatePresence>
-                                </ScrollArea>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-            <Card className="flex-1 h-[calc(100vh-2rem)] bg-white/80 backdrop-blur-sm shadow-xl">
-                <CardHeader className="border-b">
-                    <CardTitle className="text-2xl font-bold text-gray-800 flex items-center">
-                        {!isSidebarOpen && (
-                            <Button variant="ghost" size="sm" onClick={() => setIsSidebarOpen(true)} className="mr-2">
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
-                        )}
-                        <Bot className="mr-2 h-6 w-6 text-blue-500" />
-                        {currentChat.name}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col h-[calc(100%-5rem)]">
-                    <ScrollArea className="flex-grow mb-4 p-4" ref={scrollAreaRef}>
-                        <AnimatePresence>
-                            {currentChat.messages.map((message) => (
-                                <motion.div
-                                    key={message.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    transition={{ duration: 0.3 }}
-                                    className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+        <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+            <header className="bg-white shadow-sm p-4 flex items-center border-b border-gray-200">
+                <h1 className="text-xl font-semibold flex items-center text-gray-800 flex-grow">
+                    <Bot className="mr-2 h-6 w-6 text-blue-500" />
+                    AI Chat Assistant
+                </h1>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" className="ml-auto">
+                            {currentChat.name}
+                            <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-0" align="end">
+                        <ScrollArea className="h-[300px]">
+                            <div className="p-4 border-b border-gray-200">
+                                <Button
+                                    onClick={createNewChat}
+                                    className="w-full justify-start text-left font-normal hover:bg-gray-100 transition-colors duration-200 ease-in-out rounded-md"
                                 >
-                                    <div className={`flex items-start space-x-2 ${message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === 'user' ? 'bg-blue-500' : 'bg-gray-300'}`}>
-                                            {message.sender === 'user' ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-gray-600" />}
-                                        </div>
-                                        <div className={`p-3 rounded-lg ${message.sender === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'}`} style={{ maxWidth: '70%' }}>
-                                            {message.text}
-                                            {message.file && (
-                                                <div className="mt-2 p-2 bg-white rounded-md">
-                                                    <Paperclip className="inline-block mr-2 w-4 h-4" />
-                                                    {message.file.name}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                        {isTyping && (
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    New chat
+                                </Button>
+                            </div>
+                            <AnimatePresence>
+                                {chats.map(chat => (
+                                    <motion.div
+                                        key={chat.id}
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 10 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <Button
+                                            variant={chat.id === currentChatId ? "secondary" : "ghost"}
+                                            className={`w-full justify-start py-2 px-4 text-left font-normal transition-colors duration-200 ease-in-out ${
+                                                chat.id === currentChatId ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100'
+                                            }`}
+                                            onClick={() => setCurrentChatId(chat.id)}
+                                        >
+                                            <MessageSquare className={`w-4 h-4 mr-2 flex-shrink-0 ${
+                                                chat.id === currentChatId ? 'text-blue-600' : 'text-gray-500'
+                                            }`} />
+                                            <span className="truncate flex-grow">{chat.name}</span>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                    <Button variant="ghost" size="sm" className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-40">
+                                                    <DropdownMenuItem onClick={() => startRenaming(chat)}>
+                                                        Rename
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => deleteChat(chat.id)} className="text-red-600">
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </Button>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </ScrollArea>
+                    </PopoverContent>
+                </Popover>
+            </header>
+            <main className="flex-1 overflow-hidden flex flex-col bg-white">
+                <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
+                    <AnimatePresence>
+                        {currentChat.messages.map((message) => (
                             <motion.div
+                                key={message.id}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="flex items-center space-x-2"
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
-                                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                                    <Bot className="w-5 h-5 text-gray-600" />
-                                </div>
-                                <div className="p-3 rounded-lg bg-gray-100 text-gray-900">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                <div className={`flex items-start space-x-2 ${message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === 'user' ? 'bg-blue-500' : 'bg-gray-200'}`}>
+                                        {message.sender === 'user' ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-gray-600" />}
+                                    </div>
+                                    <div className={`p-3 rounded-lg ${message.sender === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-900'}`} style={{ maxWidth: '70%' }}>
+                                        {message.text}
+                                        {message.file && (
+                                            <div className="mt-2 p-2 bg-white rounded-md border border-gray-200">
+                                                <Paperclip className="inline-block mr-2 w-4 h-4" />
+                                                {message.file.name}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </motion.div>
-                        )}
-                    </ScrollArea>
+                        ))}
+                    </AnimatePresence>
+                    {isTyping && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center space-x-2"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                <Bot className="w-5 h-5 text-gray-600" />
+                            </div>
+                            <div className="p-3 rounded-lg bg-gray-100 text-gray-900">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            </div>
+                        </motion.div>
+                    )}
+                </ScrollArea>
+                <div className="p-4 border-t border-gray-200">
                     <div className="mb-4">
                         <h3 className="text-sm font-medium text-gray-700 mb-2">Suggested Prompts:</h3>
                         <div className="flex flex-wrap gap-2">
@@ -273,9 +334,9 @@ export default function AiChatPage() {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => usePrompt(prompt)}
-                                    className="text-xs"
+                                    className="text-xs bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
                                 >
-                                    <Lightbulb className="w-3 h-3 mr-1" />
+                                    <Lightbulb className="w-3 h-3 mr-1 text-yellow-500"/>
                                     {prompt}
                                 </Button>
                             ))}
@@ -287,13 +348,14 @@ export default function AiChatPage() {
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="Type your question..."
-                                className="flex-grow bg-white/50 backdrop-blur-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                className="flex-grow bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
                             />
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                            <Paperclip className="w-4 h-4" />
+                                        <Button type="button" variant="outline"
+                                                onClick={() => fileInputRef.current?.click()}>
+                                            <Paperclip className="w-4 h-4"/>
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
@@ -304,32 +366,37 @@ export default function AiChatPage() {
                             <input
                                 type="file"
                                 ref={fileInputRef}
-                                onChange={handleFileUpload}
+                                onChange={(e) => e.target.files && setFiles(Array.from(e.target.files))}
                                 className="hidden"
                             />
-                            <Button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white">
-                                <Send className="w-4 h-4 mr-2" />
+                            <Button type="submit"
+                                    className="bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200">
+                                <Send className="w-4 h-4 mr-2"/>
                                 Send
                             </Button>
                         </div>
                         {files.length > 0 && (
-                            <div className="flex items-center space-x-2">
-                                <Paperclip className="w-4 h-4 text-gray-500" />
-                                <span className="text-sm  text-gray-700">{files[0].name}</span>
+                            <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-md">
+                                <Paperclip className="w-4 h-4 text-gray-500"/>
+                                <span className="text-sm text-gray-700 truncate flex-grow">{files[0].name}</span>
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeFile(0)}
-                                    className="text-red-500 hover:text-red-700"
+                                    className="text-red-500 hover:text-red-700 transition-colors duration-200"
                                 >
-                                    <X className="w-4 h-4" />
+                                    <X className="w-4 h-4"/>
                                 </Button>
                             </div>
                         )}
                     </form>
-                </CardContent>
-            </Card>
+                    <Button onClick={clearFiles}
+                            className="mt-2 bg-red-500 hover:bg-red-600 text-white transition-colors duration-200">
+                        Clear All Files
+                    </Button>
+                </div>
+            </main>
             <Dialog open={isRenaming} onOpenChange={setIsRenaming}>
                 <DialogContent>
                     <DialogHeader>
@@ -343,11 +410,12 @@ export default function AiChatPage() {
                             id="chatName"
                             value={newChatName}
                             onChange={(e) => setNewChatName(e.target.value)}
-                            className="col-span-3"
+                            className="col-span-3 mt-1"
                         />
                     </div>
                     <DialogFooter>
-                        <Button onClick={finishRenaming}>Save</Button>
+                        <Button onClick={finishRenaming}
+                                className="bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200">Save</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
