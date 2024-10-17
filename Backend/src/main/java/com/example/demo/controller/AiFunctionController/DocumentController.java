@@ -11,6 +11,7 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -31,9 +33,14 @@ import java.util.List;
 @AllArgsConstructor
 public class DocumentController {
     private final OpenAiEmbeddingModel openAiEmbeddingModel;
-    @Autowired VectorStore vectorStore;
+    @Autowired
+    VectorStore vectorStore;
+    @Autowired
+    ChromaVectorStore chromaVectorStore;
     private final OpenAiChatModel openAiChatModel;
     private final ChatMemory chatMemory = new InMemoryChatMemory();
+
+    private List<String> savedDocumentIds = new ArrayList<>();
 
 
     @SneakyThrows
@@ -50,10 +57,18 @@ public class DocumentController {
     @SneakyThrows
     @PostMapping("etl/read/multipart")
     public void saveVectorDB(@RequestParam MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Uploaded file is empty");
+        }
         Resource resource = new InputStreamResource(file.getInputStream());
         TikaDocumentReader reader = new TikaDocumentReader(resource);
         List<Document> splitDocuments = new TokenTextSplitter().apply(reader.read());
-        vectorStore.add(splitDocuments);
+        // Save the document ids for other ops
+        for (Document doc : splitDocuments) {
+            savedDocumentIds.add(doc.getId());
+            System.out.printf("Document id: %s\n", doc.getId());
+        }
+        chromaVectorStore.doAdd(splitDocuments);
     }
 
     @SneakyThrows
@@ -80,9 +95,11 @@ public class DocumentController {
     }
 
     @GetMapping("etl/clear")
-    public ResponseEntity<String> clearVectorDB(@RequestBody List<String> vectorIds) {
+    public ResponseEntity<String> clearVectorDB() {
         try {
-             vectorStore.delete(vectorIds);
+            System.out.printf("Deleting %d documents from vector database...\n", savedDocumentIds.size());
+            chromaVectorStore.doDelete(savedDocumentIds);
+            savedDocumentIds.clear();
             return ResponseEntity.ok("Vector database cleared successfully.");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to clear vector database.");

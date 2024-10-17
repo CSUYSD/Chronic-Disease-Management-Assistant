@@ -42,7 +42,7 @@ export function FluxMessageWithHistoryAPI(params: FluxMessageParams): Promise<Ax
 export function UploadFileAPI(formData: UploadFileFormData): Promise<AxiosResponse> {
     console.log("Uploading file data:", formData);
     return request({
-        url: '/document/vectordb/save',
+        url: '/document/etl/read/multipart',
         method: 'POST',
         headers: {
             'Content-Type': 'multipart/form-data'
@@ -57,7 +57,7 @@ export function UploadFileAPI(formData: UploadFileFormData): Promise<AxiosRespon
  */
 export function ClearFileAPI(): Promise<AxiosResponse> {
     return request({
-        url: '/document/vectordb/clear',
+        url: '/document/etl/clear',
         method: 'GET'
     });
 }
@@ -67,16 +67,15 @@ export function ClearFileAPI(): Promise<AxiosResponse> {
  * @param {ChatWithFileParams} params - The chat form data
  * @returns {Promise<AxiosResponse<string>>} - The API response
  */
-export function ChatWithFileAPI(params: module): Promise<AxiosResponse<string>> {
-    const requestData = new URLSearchParams(params);
-    console.log("Sending chat with file data:", requestData.toString());
+export function ChatWithFileAPI(params: ChatWithFileParams): Promise<AxiosResponse<string>> {
+    console.log("Sending chat with file data:", params);
     return request({
         url: '/document/chat/stream/database',
         method: 'GET',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        data: requestData.toString(),
+        params: params,
         responseType: 'text'
     });
 }
