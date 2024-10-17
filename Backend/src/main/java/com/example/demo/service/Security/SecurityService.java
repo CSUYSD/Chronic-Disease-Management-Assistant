@@ -117,6 +117,8 @@ public class SecurityService {
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
             response.put("username", user.getUsername());
+            response.put("role", user.getRole().getRoleName());
+
 
             logger.info("用户 {} 登录成功", loginVo.getUsername());
             return ResponseEntity.ok(response);
