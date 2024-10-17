@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.dto.UserDTO;
-import com.example.demo.model.UserImpl.Patient;
 import com.example.demo.service.UserService;
 import com.example.demo.utility.RabbitMQProducer;
 
@@ -67,9 +66,9 @@ public class UserController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody Patient patientDetails) {
+    public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
         try {
-            userService.updateUser(id, patientDetails);
+            userService.updateUser(id, userDetails);
             return ResponseEntity.ok("User updated successfully");
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
