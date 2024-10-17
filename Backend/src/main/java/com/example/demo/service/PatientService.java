@@ -15,4 +15,9 @@ public class PatientService {
         this.patientDao = patientDao;
     }
 
+    public String getRandomStringById(Long patientId) {
+        Patient patient = patientDao.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+        return patient.getRandomString();
+    }
 }

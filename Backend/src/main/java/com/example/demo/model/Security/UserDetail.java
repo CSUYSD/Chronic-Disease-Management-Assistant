@@ -1,25 +1,34 @@
 package com.example.demo.model.Security;
 
+
+import com.example.demo.model.User;
+import com.example.demo.model.UserImpl.Companion;
 import com.example.demo.model.UserImpl.Patient;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.User;
+
 
 import java.util.Collection;
+import java.util.Objects;
 
 @Getter
 @Setter
-public class UserDetail extends User {
+public class UserDetail extends org.springframework.security.core.userdetails.User {
     private Patient patient;
+    private Companion companion;
+    @Getter
+    private User user;
 
     // 修改构造函数，接受单个 GrantedAuthority
-    public UserDetail(Patient user, Collection<? extends GrantedAuthority> authorities) {
+    public UserDetail(com.example.demo.model.User user, Collection<? extends GrantedAuthority> authorities) {
         super(user.getUsername(), user.getPassword(), authorities);
-        this.patient = user;
-    }
+        this.user = user;  // 保存自定义的 User 对象
 
-    public void setPatient(Patient patient) {
-        this.patient = patient;
+        if (user instanceof Patient) {
+            this.patient = (Patient) user;
+        } else if (user instanceof Companion) {
+            this.companion = (Companion) user;
+        }
     }
 }

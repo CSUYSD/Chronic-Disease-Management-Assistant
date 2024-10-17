@@ -1,10 +1,13 @@
 package com.example.demo.controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.example.demo.model.User;
 import com.example.demo.service.CompanionService;
+import com.example.demo.service.PatientService;
+import com.example.demo.utility.JWT.JwtUtil;
 import org.hibernate.validator.constraints.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,11 +30,15 @@ public class UserController {
 
     private final UserService userService;
     private final CompanionService companionService;
+    private final PatientService patientService;
+    private final JwtUtil jwtUtil;
 
     @Autowired
-    public UserController(UserService userService, CompanionService companionService) {
+    public UserController(UserService userService, CompanionService companionService, PatientService patientService, JwtUtil jwtUtil) {
         this.userService = userService;
         this.companionService = companionService;
+        this.patientService = patientService;
+        this.jwtUtil = jwtUtil;
     }
 
     @Autowired
@@ -123,9 +130,26 @@ public class UserController {
         return message;
     }
 
+    @GetMapping("/randomString/{id}")
+    public ResponseEntity<String> getRandomString(@PathVariable Long id) {
+        try {
+            String randomString = patientService.getRandomStringById(id); // 调用 PatientService 获取 randomString
+            return ResponseEntity.ok(randomString);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("获取 randomString 过程中发生错误: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("获取 randomString 过程中发生错误");
+        }
+    }
+
     @PostMapping("/bindCompanion")
-    public ResponseEntity<String> bindCompanion(@RequestParam Long companionId, @RequestParam String encryptedPatientId) {
-        boolean success = companionService.bindCompanionToPatient(companionId, encryptedPatientId);
+    public ResponseEntity<String> bindCompanion(@RequestHeader("Authorization") String token, @RequestBody Map<String, String> requestBody) {
+
+        Long companionId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        String randomString = requestBody.get("randomString");
+
+        boolean success = companionService.bindCompanionToPatient(companionId, randomString);
         if (success) {
             return ResponseEntity.ok("Companion bound to patient successfully");
         } else {

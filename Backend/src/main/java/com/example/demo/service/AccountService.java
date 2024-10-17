@@ -7,11 +7,13 @@ import com.example.demo.model.Account;
 import com.example.demo.model.DTO.AccountDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.UserImpl.Patient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.Dao.AccountDao;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -53,12 +55,18 @@ public class AccountService {
         }
         // 检查账户名是否已存在
         for (String key : keys){
-            if (key.equals("login_user:" + userId + ":account:initial placeholder")){
-                continue;
-            }
-            RedisAccount redisAccount = (RedisAccount) redisTemplate.opsForValue().get(key);
-            if (redisAccount.getName().equals(accountDTO.getName())){
-                throw new AccountAlreadyExistException("账户名已存在");
+            Object rawObject = redisTemplate.opsForValue().get(key);
+            if (rawObject instanceof LinkedHashMap) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                RedisAccount redisAccount = objectMapper.convertValue(rawObject, RedisAccount.class);
+                if (redisAccount.getName().equals(accountDTO.getName())) {
+                    throw new AccountAlreadyExistException("账户名已存在");
+                }
+            } else if (rawObject instanceof RedisAccount) {
+                RedisAccount redisAccount = (RedisAccount) rawObject;
+                if (redisAccount.getName().equals(accountDTO.getName())) {
+                    throw new AccountAlreadyExistException("账户名已存在");
+                }
             }
         }
         
@@ -114,14 +122,7 @@ public class AccountService {
         Account updatedAccount = accountDao.save(existingAccount);
 
         // 更新 Redis 缓存
-        String redisKey = "login_user:" + existingAccount.getPatient().getId() + ":account:" + existingAccount.getId();
-        RedisAccount redisAccount = new RedisAccount(
-                updatedAccount.getId(),
-                updatedAccount.getAccountName(),
-                updatedAccount.getTotalIncome(),
-                updatedAccount.getTotalExpense(),
-                new ArrayList<>());
-        redisTemplate.opsForValue().set(redisKey, redisAccount);
+        updateRedisAccount(existingAccount.getPatient().getId(), existingAccount.getId(), updatedAccount);
 
         return updatedAccount;
     }
@@ -142,6 +143,17 @@ public class AccountService {
     public void setCurrentAccountToRedis(Long accountId, Long userId) {
         String pattern = "login_user:" + userId + ":current_account";
         redisTemplate.opsForValue().set(pattern, accountId);
+    }
+
+    public void updateRedisAccount(Long userId, Long accountId, Account account) {
+        String redisKey = "login_user:" + userId + ":account:" + accountId;
+        RedisAccount redisAccount = new RedisAccount(
+                account.getId(),
+                account.getAccountName(),
+                account.getTotalIncome(),
+                account.getTotalExpense(),
+                new ArrayList<>());
+        redisTemplate.opsForValue().set(redisKey, redisAccount);
     }
 
 
