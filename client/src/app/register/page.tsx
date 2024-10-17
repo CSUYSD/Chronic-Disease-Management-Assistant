@@ -93,7 +93,7 @@ export default function RegisterPage() {
                         </form>
                     </CardContent>
                     <CardFooter className="flex justify-center">
-                        <Button variant="link" onClick={() => router.push('/login')} className="text-lg">
+                        <Button variant="link" onClick={() => router.push('/')} className="text-lg">
                             Already have an account? Login
                         </Button>
                     </CardFooter>
