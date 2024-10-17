@@ -4,7 +4,7 @@ import com.example.demo.Dao.PatientDao;
 import com.example.demo.exception.AccountAlreadyExistException;
 import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.Account;
-import com.example.demo.model.DTO.AccountDTO;
+import com.example.demo.model.dto.AccountDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.UserImpl.Patient;
 import com.fasterxml.jackson.databind.ObjectMapper;

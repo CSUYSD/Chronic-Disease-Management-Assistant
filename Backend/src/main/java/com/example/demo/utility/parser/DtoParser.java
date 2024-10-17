@@ -1,6 +1,6 @@
-package com.example.demo.utility;
+package com.example.demo.utility.parser;
 
-import com.example.demo.model.DTO.HealthRecordDTO;
+import com.example.demo.model.dto.HealthRecordDTO;
 import com.example.demo.model.HealthRecord;
 
 public class DtoParser {

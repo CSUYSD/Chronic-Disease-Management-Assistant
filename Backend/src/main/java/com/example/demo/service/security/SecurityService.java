@@ -1,4 +1,4 @@
-package com.example.demo.service.Security;
+package com.example.demo.service.security;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -28,13 +28,13 @@ import com.example.demo.exception.PasswordNotCorrectException;
 import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
-import com.example.demo.model.DTO.UserDTO;
+import com.example.demo.model.dto.UserDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.Redis.RedisUser;
 import com.example.demo.model.Security.UserDetail;
 import com.example.demo.model.UserImpl.Patient;
 import com.example.demo.model.UserRole;
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.utility.jwt.JwtUtil;
 import com.example.demo.model.Security.LoginVo;
 
 @Service
