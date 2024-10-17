@@ -7,7 +7,7 @@ import java.util.Optional;
 import com.example.demo.model.User;
 import com.example.demo.service.CompanionService;
 import com.example.demo.service.PatientService;
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.utility.jwt.JwtUtil;
 import org.hibernate.validator.constraints.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.exception.UserNotFoundException;
-import com.example.demo.model.DTO.UserDTO;
+import com.example.demo.model.dto.UserDTO;
 import com.example.demo.model.UserImpl.Patient;
 import com.example.demo.service.UserService;
 import com.example.demo.utility.RabbitMQProducer;

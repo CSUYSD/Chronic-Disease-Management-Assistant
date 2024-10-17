@@ -1,13 +1,11 @@
 package com.example.demo.controller;
 
 import java.util.List;
-import java.util.logging.Logger;
 
-import com.example.demo.model.DTO.HealthRecordDTO;
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.model.dto.HealthRecordDTO;
+import com.example.demo.utility.jwt.JwtUtil;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -91,7 +89,7 @@ public class RecordController {
     }
 
     @GetMapping("/recent")
-    public ResponseEntity<List<HealthRecord>> getCertainDaysRecord(@RequestHeader("Authorization") String token, @RequestParam int duration) {
+    public ResponseEntity<List<HealthRecordDTO>> getCertainDaysRecord(@RequestHeader("Authorization") String token, @RequestParam int duration) {
         if (duration < 1 || duration >= 30) {
             return ResponseEntity.badRequest().build();
         }
@@ -99,7 +97,7 @@ public class RecordController {
             Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
             String pattern = "login_user:" + userId + ":current_account";
             String accountId = stringRedisTemplate.opsForValue().get(pattern);
-            List<HealthRecord> records = recordService.getCertainDaysRecords(Long.valueOf(accountId), duration);
+            List<HealthRecordDTO> records = recordService.getCertainDaysRecords(Long.valueOf(accountId), duration);
             return ResponseEntity.ok(records);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
