@@ -1,10 +1,10 @@
 -- 删除现有的表（如果存在）
-DROP TABLE IF EXISTS companions;
-DROP TABLE IF EXISTS patients;
+DROP TABLE IF EXISTS companion;
+DROP TABLE IF EXISTS patient;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS user_roles;
-DROP TABLE IF EXISTS accounts;
-DROP TABLE IF EXISTS health_records;
+DROP TABLE IF EXISTS account;
+DROP TABLE IF EXISTS health_record;
 
 -- 创建 user_roles 表
 CREATE TABLE user_roles (

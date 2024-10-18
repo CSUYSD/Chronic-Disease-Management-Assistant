@@ -56,7 +56,7 @@ public class UserService {
         return userDao.findByUsername(username);
     }
 
-    public void updateUser(Long id, Patient updatedUser) throws UserNotFoundException {
+    public void updateUser(Long id, User updatedUser) throws UserNotFoundException {
         Optional<User> existingUserOptional = userDao.findById(id);
 
         if (!existingUserOptional.isPresent()) {
