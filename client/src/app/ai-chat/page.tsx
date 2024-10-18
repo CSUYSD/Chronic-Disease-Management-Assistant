@@ -5,19 +5,20 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Loader2, Send, Bot, User, Paperclip, Lightbulb, Plus, MoreHorizontal, MessageSquare, Trash2, Edit2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Send, Bot, User, Paperclip, Lightbulb, Plus, MoreHorizontal, MessageSquare, Trash2, Edit2, ChevronLeft, ChevronRight, X, File } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
-import { FluxMessageWithHistoryAPI, UploadFileAPI, ChatWithFileAPI, ClearFileAPI } from '@/api/ai'
+import { FluxMessageWithHistoryAPI, UploadFileAPI, ChatWithFileAPI, ClearFileAPI, ClearFileByFileName } from '@/api/ai'
 import { useDispatch } from 'react-redux'
 import { v4 as uuidv4 } from 'uuid'
 import { addChat, updateChat, deleteChat, setCurrentChatId, useChats, useCurrentChatId, useCurrentChat } from '@/store/chatSlice'
-import { setUploadedFile, clearUploadedFile, useUploadedFile } from '@/store/fileSlice'
+import { setUploadedFiles, removeUploadedFile, clearUploadedFiles, useUploadedFiles } from '@/store/fileSlice'
 import { AppDispatch } from '@/store'
 import { ErrorBoundary } from 'react-error-boundary'
+import AiResponseFormatter from '@/components/AiResponseFormatter'
 
 interface Message {
     id: number
@@ -31,12 +32,21 @@ interface Chat {
     messages: Message[]
 }
 
+interface UploadedFile {
+    name: string
+    size: number
+    type: string
+}
+
 const suggestedPrompts = [
     "What are the symptoms of diabetes?",
     "How can I improve my sleep quality?",
     "What's a balanced diet for heart health?",
     "Can you explain the importance of regular exercise?",
 ]
+
+const MAX_FILES = 10
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
 function ErrorFallback({error, resetErrorBoundary}) {
     return (
@@ -53,14 +63,15 @@ export default function AiChatPage() {
     const chats = useChats()
     const currentChatId = useCurrentChatId()
     const currentChat = useCurrentChat()
-    const uploadedFile = useUploadedFile()
+    const uploadedFiles = useUploadedFiles()
 
     const [input, setInput] = useState('')
     const [isTyping, setIsTyping] = useState(false)
     const [isRenaming, setIsRenaming] = useState(false)
     const [newChatName, setNewChatName] = useState('')
-    const [, setIsCreatingNewChat] = useState(false)
+    const [isCreatingNewChat, setIsCreatingNewChat] = useState(false)
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+    const [isUploading, setIsUploading] = useState(false)
     const scrollAreaRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -99,7 +110,7 @@ export default function AiChatPage() {
 
         try {
             let response;
-            if (uploadedFile) {
+            if (uploadedFiles.length > 0) {
                 response = await ChatWithFileAPI({
                     prompt: input,
                     sessionId: currentChat.id
@@ -150,41 +161,81 @@ export default function AiChatPage() {
     }
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files && event.target.files[0]) {
-            const file = event.target.files[0];
-            const formData = new FormData()
-            formData.append('file', file)
+        if (event.target.files) {
+            const files = Array.from(event.target.files)
+            const totalFiles = uploadedFiles.length + files.length
 
-            try {
-                await UploadFileAPI(formData)
-                dispatch(setUploadedFile({
-                    name: file.name,
-                    size: file.size,
-                    type: file.type
-                }))
-                toast({
-                    title: "Success",
-                    description: "File uploaded successfully.",
-                })
-            } catch (error) {
-                console.error('Error uploading file:', error)
+            if (totalFiles > MAX_FILES) {
                 toast({
                     title: "Error",
-                    description: "Failed to upload file. Please try again.",
+                    description: `You can only upload a maximum of ${MAX_FILES} files.`,
                     variant: "destructive",
                 })
+                return
             }
+
+            setIsUploading(true)
+
+            for (const file of files) {
+                if (file.size > MAX_FILE_SIZE) {
+                    toast({
+                        title: "Error",
+                        description: `File ${file.name} exceeds the maximum size of 5MB.`,
+                        variant: "destructive",
+                    })
+                    continue
+                }
+
+                const formData = new FormData()
+                formData.append('file', file)
+
+                try {
+                    await UploadFileAPI(formData)
+                    dispatch(setUploadedFiles([...uploadedFiles, {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type
+                    }]))
+                    toast({
+                        title: "Success",
+                        description: `File ${file.name} uploaded successfully.`,
+                    })
+                } catch (error) {
+                    console.error('Error uploading file:', error)
+                    toast({
+                        title: "Error",
+                        description: `Failed to upload file ${file.name}. Please try again.`,
+                        variant: "destructive",
+                    })
+                }
+            }
+
+            setIsUploading(false)
         }
     }
 
-    const removeFile = () => {
-        dispatch(clearUploadedFile())
+    const removeFile = async (file: UploadedFile) => {
+        try {
+            await ClearFileByFileName(file.name)
+            dispatch(removeUploadedFile(file))
+            toast({
+                title: "Success",
+                description: `File ${file.name} removed successfully.`,
+            })
+        } catch (error) {
+            console.error('Error removing file:', error)
+            toast({
+                title: "Error",
+                description: `Failed to remove file ${file.name}. Please try again.`,
+                variant: "destructive",
+            })
+        }
     }
 
     const clearAllFiles = async () => {
         try {
             await ClearFileAPI()
-            dispatch(clearUploadedFile())
+            dispatch(clearUploadedFiles())
             toast({
                 title: "Success",
                 description: "All files have been cleared.",
@@ -336,7 +387,7 @@ export default function AiChatPage() {
                                     className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                                 >
                                     <div className={`flex items-start space-x-2 ${message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === 'user' ? 'bg-gray-200' : 'bg-gray-100'}`}>
+                                        <div  className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === 'user' ? 'bg-gray-200' : 'bg-gray-100'}`}>
                                             {message.sender === 'user' ? <User className="w-5 h-5 text-gray-600" /> : <Bot className="w-5 h-5 text-gray-600" />}
                                         </div>
                                         <motion.div
@@ -344,10 +395,13 @@ export default function AiChatPage() {
                                             style={{ maxWidth: '70%' }}
                                             initial={{ scale: 0.8, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
-                                            transition={{ duration: 0.3,
-                                                delay: index * 0.1 }}
+                                            transition={{ duration: 0.3, delay: index * 0.1 }}
                                         >
-                                            {message.text}
+                                            {message.sender === 'ai' ? (
+                                                <AiResponseFormatter text={message.text} />
+                                            ) : (
+                                                message.text
+                                            )}
                                         </motion.div>
                                     </div>
                                 </motion.div>
@@ -403,12 +457,12 @@ export default function AiChatPage() {
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                                <Paperclip className="w-4 h-4" />
+                                            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                                                {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
                                             </Button>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            <p>Upload file</p>
+                                            <p>Upload file (max 10 files, 5MB each)</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
@@ -417,45 +471,41 @@ export default function AiChatPage() {
                                     ref={fileInputRef}
                                     onChange={handleFileUpload}
                                     className="hidden"
+                                    multiple
                                 />
                                 <Button type="submit" className="bg-gray-900 hover:bg-gray-800 text-white transition-colors duration-200">
                                     <Send className="w-4 h-4 mr-2" />
                                     Send
                                 </Button>
                             </div>
-                            {uploadedFile && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 20 }}
-                                    className="flex items-center justify-between bg-gray-50 p-2 rounded-md border border-gray-200"
-                                >
-                                    <div className="flex items-center space-x-2">
-                                        <Paperclip className="w-4 h-4 text-gray-500" />
-                                        <span className="text-sm text-gray-700 truncate">{uploadedFile.name}</span>
-                                    </div>
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={removeFile}
-                                                    className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Remove file</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </motion.div>
-                            )}
+                            <div className="flex flex-wrap gap-2">
+                                <AnimatePresence>
+                                    {uploadedFiles.map((file, index) => (
+                                        <motion.div
+                                            key={file.name}
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.8 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="flex items-center space-x-2 bg-gray-50 p-2 rounded-md border border-gray-200"
+                                        >
+                                            <File className="w-4 h-4 text-gray-500" />
+                                            <span className="text-sm text-gray-700 truncate max-w-[100px]">{file.name}</span>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => removeFile(file)}
+                                                className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </Button>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
                         </form>
-                        {uploadedFile && (
+                        {uploadedFiles.length > 0 && (
                             <Button
                                 onClick={clearAllFiles}
                                 className="mt-2 bg-red-500 hover:bg-red-600 text-white transition-colors duration-200 w-full"

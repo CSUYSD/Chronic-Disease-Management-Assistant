@@ -26,7 +26,10 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/document")
@@ -39,8 +42,7 @@ public class DocumentController {
     ChromaVectorStore chromaVectorStore;
     private final OpenAiChatModel openAiChatModel;
     private final ChatMemory chatMemory = new InMemoryChatMemory();
-
-    private List<String> savedDocumentIds = new ArrayList<>();
+    private final Map<String, List<String>> fileDocumentIdsMap = new HashMap<>();
 
 
     @SneakyThrows
@@ -63,11 +65,17 @@ public class DocumentController {
         Resource resource = new InputStreamResource(file.getInputStream());
         TikaDocumentReader reader = new TikaDocumentReader(resource);
         List<Document> splitDocuments = new TokenTextSplitter().apply(reader.read());
-        // Save the document ids for other ops
+
+        String fileName = file.getOriginalFilename();
+        List<String> documentIds = new ArrayList<>();
+
         for (Document doc : splitDocuments) {
-            savedDocumentIds.add(doc.getId());
+            documentIds.add(doc.getId());
             System.out.printf("Document id: %s\n", doc.getId());
         }
+        // 保存文件名和对应的文档ID列表
+        fileDocumentIdsMap.put(fileName, documentIds);
+
         chromaVectorStore.doAdd(splitDocuments);
     }
 
@@ -94,12 +102,34 @@ public class DocumentController {
                         .build());
     }
 
+    //根据文件名进行单个文件的删除
+    @DeleteMapping("etl/delete/{fileName}")
+    public ResponseEntity<String> deleteFileFromVectorDB(@PathVariable String fileName) {
+        List<String> documentIds = fileDocumentIdsMap.get(fileName);
+        if (documentIds == null || documentIds.isEmpty()) {
+            return ResponseEntity.badRequest().body("File not found or already deleted.");
+        }
+
+        try {
+            System.out.printf("Deleting %d documents for file '%s' from vector database...\n", documentIds.size(), fileName);
+            chromaVectorStore.doDelete(documentIds);
+            fileDocumentIdsMap.remove(fileName);
+            return ResponseEntity.ok("File '" + fileName + "' deleted successfully from vector database.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to delete file '" + fileName + "' from vector database.");
+        }
+    }
+
     @GetMapping("etl/clear")
     public ResponseEntity<String> clearVectorDB() {
         try {
-            System.out.printf("Deleting %d documents from vector database...\n", savedDocumentIds.size());
-            chromaVectorStore.doDelete(savedDocumentIds);
-            savedDocumentIds.clear();
+            List<String> allDocumentIds = fileDocumentIdsMap.values().stream()
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+
+            System.out.printf("Deleting %d documents from vector database...\n", allDocumentIds.size());
+            chromaVectorStore.doDelete(allDocumentIds);
+            fileDocumentIdsMap.clear();
             return ResponseEntity.ok("Vector database cleared successfully.");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to clear vector database.");

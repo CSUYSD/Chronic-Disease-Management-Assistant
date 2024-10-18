@@ -63,6 +63,18 @@ export function ClearFileAPI(): Promise<AxiosResponse> {
 }
 
 /**
+ * Clear File by FileName API
+ * @returns {Promise<AxiosResponse>} - The API response
+ * @param fileName
+ */
+export function ClearFileByFileName(fileName: string): Promise<AxiosResponse> {
+    return request ({
+        url: `/document/etl/delete/${fileName}`,
+        method: "DELETE"
+    })
+}
+
+/**
  * Chat with File API
  * @param {ChatWithFileParams} params - The chat form data
  * @returns {Promise<AxiosResponse<string>>} - The API response
