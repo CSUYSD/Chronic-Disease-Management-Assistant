@@ -72,7 +72,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                     </motion.aside>
                 )}
             </AnimatePresence>
-            <main className={`flex-1 overflow-auto ${showSidebar ? 'p-4' : ''}`}>
+            <main className={`flex-1 overflow-auto ${showSidebar ? 'p' : ''}`}>
                 {children}
             </main>
         </div>
