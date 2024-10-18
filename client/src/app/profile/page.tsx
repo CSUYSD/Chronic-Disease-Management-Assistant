@@ -2,13 +2,13 @@
 
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
-import { User, Mail, Shield, Key, Calendar, Heart, UserPlus } from 'lucide-react'
+import { User, Mail, Key, Calendar, Heart } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getProfileAPI } from "@/api/user"
 import { setProfile, selectProfile, selectIsLoading } from '@/store/profileSlice'
@@ -41,8 +41,15 @@ export default function ProfilePage() {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    animate={{
+                        rotate: 360,
+                        scale: [1, 1.2, 1],
+                    }}
+                    transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                    }}
                     className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full"
                 />
             </div>
@@ -52,7 +59,14 @@ export default function ProfilePage() {
     if (!profile) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <p className="text-xl text-gray-600">Failed to load profile. Please try again later.</p>
+                <motion.p
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="text-xl text-gray-600"
+                >
+                    Failed to load profile. Please try again later.
+                </motion.p>
             </div>
         )
     }
@@ -74,7 +88,14 @@ export default function ProfilePage() {
                 transition={{ duration: 0.5 }}
                 className="max-w-4xl mx-auto"
             >
-                <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center">Your Profile</h1>
+                <motion.h1
+                    className="text-4xl font-bold text-gray-800 mb-8 text-center"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                    Your Profile
+                </motion.h1>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
@@ -92,75 +113,52 @@ export default function ProfilePage() {
                             </CardHeader>
                             <CardContent>
                                 <form onSubmit={handleSubmit} className="space-y-6">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="username" className="flex items-center text-lg">
-                                            <User className="mr-2 h-5 w-5 text-gray-500" />
-                                            Username
+                                    <AnimatePresence>
+                                        {['username', 'email', 'dob'].map((field, index) => (
+                                            <motion.div
+                                                key={field}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -20 }}
+                                                transition={{ duration: 0.3, delay: index * 0.1 }}
+                                                className="space-y-2"
+                                            >
+                                                <Label htmlFor={field} className="flex items-center text-lg">
+                                                    {field === 'username' && <User className="mr-2 h-5 w-5 text-gray-500" />}
+                                                    {field === 'email' && <Mail className="mr-2 h-5 w-5 text-gray-500" />}
+                                                    {field === 'dob' && <Calendar className="mr-2 h-5 w-5 text-gray-500" />}
+                                                    {field.charAt(0).toUpperCase() + field.slice(1)}
+                                                </Label>
+                                                <Input
+                                                    id={field}
+                                                    value={profile[field]}
+                                                    readOnly
+                                                    className="bg-gray-100"
+                                                />
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                    <motion.div
+                                        className="space-y-2"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: 0.3 }}
+                                    >
+                                        <Label htmlFor="healthMetrics" className="flex items-center text-lg">
+                                            <Heart className="mr-2 h-5 w-5 text-red-500" />
+                                            Health Metrics
                                         </Label>
-                                        <Input
-                                            id="username"
-                                            value={profile.username}
-                                            readOnly
-                                            className="bg-gray-100"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email" className="flex items-center text-lg">
-                                            <Mail className="mr-2 h-5 w-5 text-gray-500" />
-                                            Email
-                                        </Label>
-                                        <Input
-                                            id="email"
-                                            value={profile.email}
-                                            readOnly
-                                            className="bg-gray-100"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="dob" className="flex items-center text-lg">
-                                            <Calendar className="mr-2 h-5 w-5 text-gray-500" />
-                                            Date of Birth
-                                        </Label>
-                                        <Input
-                                            id="dob"
-                                            value={profile.dob}
-                                            readOnly
-                                            className="bg-gray-100"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="role" className="flex items-center text-lg">
-                                            <Shield className="mr-2 h-5 w-5 text-gray-500" />
-                                            Role
-                                        </Label>
-                                        <Input
-                                            id="role"
-                                            value={profile.role}
-                                            readOnly
-                                            className="bg-gray-100"
-                                        />
-                                    </div>
-                                    {profile.role === 'patient' && (
-                                        <div className="space-y-2">
-                                            <Label htmlFor="healthMetrics" className="flex items-center text-lg">
-                                                <Heart className="mr-2 h-5 w-5 text-red-500" />
-                                                Health Metrics
-                                            </Label>
-                                            <Button className="w-full">View Health Dashboard</Button>
-                                        </div>
-                                    )}
-                                    {profile.role === 'companion' && (
-                                        <div className="space-y-2">
-                                            <Label htmlFor="patients" className="flex items-center text-lg">
-                                                <UserPlus className="mr-2 h-5 w-5 text-green-500" />
-                                                Patients
-                                            </Label>
-                                            <Button className="w-full">Manage Patients</Button>
-                                        </div>
-                                    )}
-                                    <Button type="submit" className="w-full text-lg py-6">
-                                        <Key className="mr-2 h-5 w-5" /> Update Profile
-                                    </Button>
+                                        <Button className="w-full">View Health Dashboard</Button>
+                                    </motion.div>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: 0.4 }}
+                                    >
+                                        <Button type="submit" className="w-full text-lg py-6">
+                                            <Key className="mr-2 h-5 w-5" /> Update Profile
+                                        </Button>
+                                    </motion.div>
                                 </form>
                             </CardContent>
                         </Card>
@@ -179,18 +177,31 @@ export default function ProfilePage() {
                                 <CardDescription>Your account details at a glance</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="flex justify-center">
+                                <motion.div
+                                    className="flex justify-center"
+                                    whileHover={{ scale: 1.1 }}
+                                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                >
                                     <Avatar className="h-32 w-32">
                                         <AvatarImage src={profile.avatar || '/default-avatar.png'} alt={profile.username} />
                                         <AvatarFallback>{profile.username.charAt(0).toUpperCase()}</AvatarFallback>
                                     </Avatar>
-                                </div>
-                                <div className="text-center">
+                                </motion.div>
+                                <motion.div
+                                    className="text-center"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.6 }}
+                                >
                                     <h2 className="text-2xl font-semibold text-gray-800">{profile.username}</h2>
                                     <p className="text-lg text-gray-600">{profile.email}</p>
-                                    <p className="text-md text-gray-600 mt-2 capitalize">{profile.role}</p>
-                                </div>
-                                <div className="pt-4 space-y-4">
+                                </motion.div>
+                                <motion.div
+                                    className="pt-4 space-y-4"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.8 }}
+                                >
                                     <div className="flex items-center text-lg">
                                         <Calendar className="mr-2 h-5 w-5 text-gray-500" />
                                         <span>Born: {profile.dob}</span>
@@ -201,12 +212,10 @@ export default function ProfilePage() {
                                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
                                     >
                                         <p className="text-gray-800 font-medium">
-                                            {profile.role === 'patient'
-                                                ? "Track your health journey with us!"
-                                                : "Help your loved ones stay healthy!"}
+                                            Track your health journey with us!
                                         </p>
                                     </motion.div>
-                                </div>
+                                </motion.div>
                             </CardContent>
                         </Card>
                     </motion.div>
