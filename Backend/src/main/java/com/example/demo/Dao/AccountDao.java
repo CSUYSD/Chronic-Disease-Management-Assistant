@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.example.demo.model.Account;
-import com.example.demo.model.UserImpl.Patient;
+import com.example.demo.model.userimpl.Patient;
 
 @Repository
 public interface AccountDao extends JpaRepository<Account, Long> {

@@ -1,4 +1,4 @@
-package com.example.demo.model.UserImpl;
+package com.example.demo.model.userimpl;
 
 import java.util.ArrayList;
 import java.util.List;

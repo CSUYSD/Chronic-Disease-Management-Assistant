@@ -11,7 +11,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import com.example.demo.Dao.UserDao;
-import com.example.demo.model.Security.UserDetail;
+import com.example.demo.model.security.UserDetail;
 import com.example.demo.model.UserRole;
 
 import java.util.Collection;

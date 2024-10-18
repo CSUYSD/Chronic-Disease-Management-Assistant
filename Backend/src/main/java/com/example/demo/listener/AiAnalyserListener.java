@@ -1,6 +1,6 @@
 package com.example.demo.listener;
 
-import com.example.demo.model.ai.AnalyseRequest;
+import com.example.demo.model.message.AnalyseRequest;
 import com.example.demo.service.RecordService;
 import com.example.demo.service.ai.AiAnalyserService;
 import com.example.demo.utility.converter.PromptConverter;
@@ -13,19 +13,19 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class AiAnalyser {
+public class AiAnalyserListener {
     public final AiAnalyserService aiAnalyserService;
     public final GetCurrentUserInfo getCurrentUserInfo;
     public final RecordService recordService;
     public final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public AiAnalyser(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, RecordService recordService, SimpMessagingTemplate messagingTemplate) {
+    public AiAnalyserListener(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, RecordService recordService, SimpMessagingTemplate messagingTemplate) {
         this.aiAnalyserService = aiAnalyserService;
         this.getCurrentUserInfo = getCurrentUserInfo;
         this.recordService = recordService;
         this.messagingTemplate = messagingTemplate;
-        log.info("AiAnalyser initialized with dependencies");
+        log.info("AiAnalyserListener initialized with dependencies");
     }
 
     @RabbitListener(queues = "new.record.to.ai.analyser")

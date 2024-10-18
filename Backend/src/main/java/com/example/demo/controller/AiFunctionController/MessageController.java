@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 @RestController
-@RequestMapping("/message")
+@RequestMapping("ai/message")
 public class MessageController {
     private static final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     private final OpenAiChatModel openAiChatModel;

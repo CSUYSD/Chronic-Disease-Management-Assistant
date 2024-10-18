@@ -1,16 +1,15 @@
-package com.example.demo.model.Security;
+package com.example.demo.model.security;
 
 
 import com.example.demo.model.User;
-import com.example.demo.model.UserImpl.Companion;
-import com.example.demo.model.UserImpl.Patient;
+import com.example.demo.model.userimpl.Companion;
+import com.example.demo.model.userimpl.Patient;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 
 
 import java.util.Collection;
-import java.util.Objects;
 
 @Getter
 @Setter

@@ -2,10 +2,13 @@ package com.example.demo.controller.AiFunctionController;
 
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -14,6 +17,7 @@ import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamResource;
@@ -29,8 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/document")
-@AllArgsConstructor
+@RequestMapping("/ai/document")
+@Slf4j
 public class DocumentController {
     private final OpenAiEmbeddingModel openAiEmbeddingModel;
     @Autowired
@@ -40,8 +44,13 @@ public class DocumentController {
     private final OpenAiChatModel openAiChatModel;
     private final ChatMemory chatMemory = new InMemoryChatMemory();
 
-    private List<String> savedDocumentIds = new ArrayList<>();
+    private final List<String> savedDocumentIds = new ArrayList<>();
+    private String currentConversationId = "";
 
+    public DocumentController(OpenAiEmbeddingModel openAiEmbeddingModel, OpenAiChatModel openAiChatModel) {
+        this.openAiEmbeddingModel = openAiEmbeddingModel;
+        this.openAiChatModel = openAiChatModel;
+    }
 
     @SneakyThrows
     @PostMapping("etl/read/local")
@@ -73,7 +82,7 @@ public class DocumentController {
 
     @SneakyThrows
     @GetMapping(value = "chat/stream/database", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<String>> chatStreamWithDatabase(@RequestParam String prompt, @RequestParam String sessionId) {
+    public Flux<ServerSentEvent<String>> chatStreamWithDatabase(@RequestParam String prompt, @RequestParam String conversationId) {
         // 1. 定义提示词模板，question_answer_context会被替换成向量数据库中查询到的文档。
         String promptWithContext = """
                 Below is the context information:
@@ -82,10 +91,12 @@ public class DocumentController {
                 ---------------------
                 Please respond based on the provided context and historical information, rather than using prior knowledge. If the answer is not present in the context, let the user know that you don't know the answer.
                 """;
+        currentConversationId = conversationId;
         return ChatClient.create(openAiChatModel).prompt()
                 .user(prompt)
                 // 2. QuestionAnswerAdvisor会在运行时替换模板中的占位符`question_answer_context`，替换成向量数据库中查询到的文档。此时的query=用户的提问+替换完的提示词模板;
                 .advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults(), promptWithContext))
+                .advisors(new MessageChatMemoryAdvisor(chatMemory, conversationId, 10))
                 .stream()
                 // 3. query发送给大模型得到答案
                 .content()
@@ -110,4 +121,11 @@ public class DocumentController {
     public float[] embedding(@RequestParam String text) {
         return openAiEmbeddingModel.embed(text);
     }
+
+    @RabbitListener(queues = "health.report.to.chatbot")
+    public void receiveHealthReport(String report) {
+        log.info("Chat bot received health report from AI analyser: {}", report);
+        chatMemory.add(currentConversationId, new SystemMessage(report));
+    }
+
 }

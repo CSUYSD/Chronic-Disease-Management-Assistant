@@ -3,7 +3,7 @@ package com.example.demo.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.example.demo.model.ai.AnalyseRequest;
+import com.example.demo.model.message.AnalyseRequest;
 import com.example.demo.service.rabbitmq.RabbitMQService;
 import com.example.demo.utility.GetCurrentUserInfo;
 import com.example.demo.utility.converter.HealthRecordConverter;
@@ -19,7 +19,7 @@ import com.example.demo.Dao.RecordDao;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.HealthRecordDTO;
 import com.example.demo.model.HealthRecord;
-import com.example.demo.model.UserImpl.Patient;
+import com.example.demo.model.userimpl.Patient;
 import com.example.demo.utility.jwt.JwtUtil;
 
 import jakarta.transaction.Transactional;

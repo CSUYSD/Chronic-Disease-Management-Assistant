@@ -1,6 +1,6 @@
 package com.example.demo.service.rabbitmq;
 
-import com.example.demo.model.ai.AnalyseRequest;
+import com.example.demo.model.message.AnalyseRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +23,16 @@ public class RabbitMQService {
         } catch (Exception e) {
             log.error("Error sending AnalyseRequest to AI analyser: {}", e.getMessage());
             throw new RuntimeException("Error sending AnalyseRequest to AI analyser: " + e.getMessage());
+        }
+    }
+
+    public void sendHealthReportToChatbot(String report) {
+        try {
+            rabbitTemplate.convertAndSend("health.report.to.chatbot", report);
+            log.info("report sent successfully to chatbot: {}", report);
+        } catch (Exception e) {
+            log.error("Error sending report to chat bot: {}", e.getMessage());
+            throw new RuntimeException("Error sending report to chatbot: " + e.getMessage());
         }
     }
 }
