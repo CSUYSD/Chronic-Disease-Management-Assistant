@@ -1,22 +1,23 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Loader2, Send, Bot, User, Paperclip, Lightbulb, Plus, MoreHorizontal, MessageSquare, Trash2, Edit2, ChevronLeft, ChevronRight, X, File } from 'lucide-react'
+import { Loader2, Send, Bot, User, Paperclip, Lightbulb, Plus, MoreHorizontal, MessageSquare, Trash2, Edit2, ChevronLeft, ChevronRight, X, File, FileText } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
-import { FluxMessageWithHistoryAPI, UploadFileAPI, ChatWithFileAPI, ClearFileAPI, ClearFileByFileName } from '@/api/ai'
-import { useDispatch } from 'react-redux'
+import { FluxMessageWithHistoryAPI, UploadFileAPI, ChatWithFileAPI, ClearFileAPI, ClearFileByFileName, GenerateReportAPI } from '@/api/ai'
+import { useDispatch, useSelector } from 'react-redux'
 import { v4 as uuidv4 } from 'uuid'
-import { addChat, updateChat, deleteChat, setCurrentChatId, useChats, useCurrentChatId, useCurrentChat } from '@/store/chatSlice'
-import { setUploadedFiles, removeUploadedFile, clearUploadedFiles, useUploadedFiles } from '@/store/fileSlice'
-import { AppDispatch } from '@/store'
+import { addChat, updateChat, deleteChat, setCurrentChatId } from '@/store/chatSlice'
+import { setUploadedFiles, removeUploadedFile, clearUploadedFiles } from '@/store/fileSlice'
+import { setReport, setReportStatus } from '@/store/reportSlice'
+import { AppDispatch, RootState } from '@/store'
 import { ErrorBoundary } from 'react-error-boundary'
 import AiResponseFormatter from '@/components/AiResponseFormatter'
 
@@ -48,7 +49,7 @@ const suggestedPrompts = [
 const MAX_FILES = 10
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
-function ErrorFallback({error, resetErrorBoundary}) {
+function ErrorFallback({error, resetErrorBoundary}: {error: Error, resetErrorBoundary: () => void}) {
     return (
         <div role="alert" className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
             <p>Something went wrong:</p>
@@ -60,16 +61,17 @@ function ErrorFallback({error, resetErrorBoundary}) {
 
 export default function AiChatPage() {
     const dispatch = useDispatch<AppDispatch>()
-    const chats = useChats()
-    const currentChatId = useCurrentChatId()
-    const currentChat = useCurrentChat()
-    const uploadedFiles = useUploadedFiles()
+    const chats = useSelector((state: RootState) => state.chat.chats)
+    const currentChatId = useSelector((state: RootState) => state.chat.currentChatId)
+    const currentChat = useSelector((state: RootState) => state.chat.chats.find(chat => chat.id === state.chat.currentChatId))
+    const uploadedFiles = useSelector((state: RootState) => state.file.uploadedFiles)
+    const reportStatus = useSelector((state: RootState) => state.report.status)
 
     const [input, setInput] = useState('')
     const [isTyping, setIsTyping] = useState(false)
     const [isRenaming, setIsRenaming] = useState(false)
     const [newChatName, setNewChatName] = useState('')
-    const [isCreatingNewChat, setIsCreatingNewChat] = useState(false)
+    const [, setIsCreatingNewChat] = useState(false)
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const [isUploading, setIsUploading] = useState(false)
     const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -97,12 +99,10 @@ export default function AiChatPage() {
             sender: 'user',
         }
 
-        const updatedMessages = [...currentChat.messages, newUserMessage]
-
         dispatch(updateChat({
             id: currentChat.id,
             changes: {
-                messages: updatedMessages
+                messages: [...currentChat.messages, newUserMessage]
             }
         }))
         setInput('')
@@ -113,7 +113,7 @@ export default function AiChatPage() {
             if (uploadedFiles.length > 0) {
                 response = await ChatWithFileAPI({
                     prompt: input,
-                    sessionId: currentChat.id
+                    conversationId: currentChat.id
                 })
             } else {
                 response = await FluxMessageWithHistoryAPI({
@@ -122,32 +122,20 @@ export default function AiChatPage() {
                 })
             }
 
-            const data = response.data
-            const events = data.split('event:message\n')
-            let aiResponse = ''
+            const aiResponse = response.data
 
-            for (const event of events) {
-                const lines = event.split('\n')
-                for (const line of lines) {
-                    if (line.startsWith('data:')) {
-                        const content = line.slice(5).trim()
-                        if (content) {
-                            aiResponse += content + ' '
-                            const newAiMessage: Message = {
-                                id: Date.now(),
-                                text: aiResponse.trim(),
-                                sender: 'ai'
-                            }
-                            dispatch(updateChat({
-                                id: currentChat.id,
-                                changes: {
-                                    messages: [...updatedMessages, newAiMessage]
-                                }
-                            }))
-                        }
-                    }
-                }
+            const newAiMessage: Message = {
+                id: Date.now(),
+                text: aiResponse,
+                sender: 'ai'
             }
+
+            dispatch(updateChat({
+                id: currentChat.id,
+                changes: {
+                    messages: [...currentChat.messages, newUserMessage, newAiMessage]
+                }
+            }))
         } catch (error) {
             console.error('Error getting AI response:', error);
             toast({
@@ -292,6 +280,47 @@ export default function AiChatPage() {
         setIsSidebarOpen(!isSidebarOpen)
     }
 
+    const generateReport = async () => {
+        dispatch(setReportStatus('loading'))
+        try {
+            const response = await GenerateReportAPI()
+            const reportContent = response.data
+
+            if (currentChat) {
+                const newAiMessage: Message = {
+                    id: Date.now(),
+                    text: reportContent,
+                    sender: 'ai'
+                }
+
+                dispatch(updateChat({
+                    id: currentChat.id,
+                    changes: {
+                        messages: [...currentChat.messages, newAiMessage]
+                    }
+                }))
+            }
+
+            dispatch(setReport({
+                content: reportContent,
+                generatedAt: new Date().toISOString()
+            }))
+            dispatch(setReportStatus('success'))
+            toast({
+                title: "Success",
+                description: "AI report generated successfully.",
+            })
+        } catch (error) {
+            console.error('Error generating AI report:', error)
+            dispatch(setReportStatus('error'))
+            toast({
+                title: "Error",
+                description: "Failed to generate AI report. Please try again.",
+                variant: "destructive",
+            })
+        }
+    }
+
     if (!currentChat) {
         return <div>Loading...</div>
     }
@@ -363,7 +392,7 @@ export default function AiChatPage() {
                         </AnimatePresence>
                     </ScrollArea>
                 </motion.aside>
-                <main className="flex-1 flex flex-col relative">
+                <main className="flex-1 flex  flex-col relative">
                     <header className="bg-white shadow-sm p-4 flex items-center justify-between border-b border-gray-200">
                         <div className="flex items-center">
                             <Button variant="ghost" size="sm" onClick={toggleSidebar} className="mr-2">
@@ -374,6 +403,18 @@ export default function AiChatPage() {
                                 AI Chat Assistant
                             </h1>
                         </div>
+                        <Button
+                            onClick={generateReport}
+                            disabled={reportStatus === 'loading'}
+                            className="bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200"
+                        >
+                            {reportStatus === 'loading' ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <FileText className="w-4 h-4 mr-2" />
+                            )}
+                            Generate AI Report
+                        </Button>
                     </header>
                     <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
                         <AnimatePresence>
@@ -387,7 +428,7 @@ export default function AiChatPage() {
                                     className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                                 >
                                     <div className={`flex items-start space-x-2 ${message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                                        <div  className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === 'user' ? 'bg-gray-200' : 'bg-gray-100'}`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === 'user' ? 'bg-gray-200' : 'bg-gray-100'}`}>
                                             {message.sender === 'user' ? <User className="w-5 h-5 text-gray-600" /> : <Bot className="w-5 h-5 text-gray-600" />}
                                         </div>
                                         <motion.div
@@ -397,11 +438,7 @@ export default function AiChatPage() {
                                             animate={{ scale: 1, opacity: 1 }}
                                             transition={{ duration: 0.3, delay: index * 0.1 }}
                                         >
-                                            {message.sender === 'ai' ? (
-                                                <AiResponseFormatter text={message.text} />
-                                            ) : (
-                                                message.text
-                                            )}
+                                            <AiResponseFormatter text={message.text} />
                                         </motion.div>
                                     </div>
                                 </motion.div>

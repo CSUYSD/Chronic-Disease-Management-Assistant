@@ -41,15 +41,13 @@ public class MessageController {
 
     //streaming chat with memory use SSE pipeline.
     @GetMapping(value = "/chat/stream/history", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<String>> chatStream(@RequestParam String prompt, @RequestParam String sessionId) {
+    public String chatStream(@RequestParam String prompt, @RequestParam String sessionId) {
         MessageChatMemoryAdvisor messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory, sessionId, 10);
         return ChatClient.create(openAiChatModel).prompt()
                 .user(prompt)
                 .advisors(messageChatMemoryAdvisor)
-                .stream() //流式返回
-                .content().map(chatResponse -> ServerSentEvent.builder(chatResponse)
-                        .event("message")
-                        .build());
+                .call()
+                .content();
     }
 
     @SneakyThrows

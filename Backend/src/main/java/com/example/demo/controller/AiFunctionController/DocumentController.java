@@ -40,10 +40,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DocumentController {
     private final OpenAiEmbeddingModel openAiEmbeddingModel;
+
     @Autowired
     VectorStore vectorStore;
+
     @Autowired
     ChromaVectorStore chromaVectorStore;
+
     private final OpenAiChatModel openAiChatModel;
     private final ChatMemory chatMemory = new InMemoryChatMemory();
     private final Map<String, List<String>> fileDocumentIdsMap = new HashMap<>();
@@ -91,7 +94,7 @@ public class DocumentController {
 
     @SneakyThrows
     @GetMapping(value = "chat/stream/database", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<String>> chatStreamWithDatabase(@RequestParam String prompt, @RequestParam String conversationId) {
+    public String chatStreamWithDatabase(@RequestParam String prompt, @RequestParam String conversationId) {
         // 1. 定义提示词模板，question_answer_context会被替换成向量数据库中查询到的文档。
         String promptWithContext = """
                 Below is the context information:
@@ -106,12 +109,10 @@ public class DocumentController {
                 // 2. QuestionAnswerAdvisor会在运行时替换模板中的占位符`question_answer_context`，替换成向量数据库中查询到的文档。此时的query=用户的提问+替换完的提示词模板;
                 .advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults(), promptWithContext))
                 .advisors(new MessageChatMemoryAdvisor(chatMemory, conversationId, 10))
-                .stream()
+                .call()
                 // 3. query发送给大模型得到答案
-                .content()
-                .map(chatResponse -> ServerSentEvent.builder(chatResponse)
-                        .event("message")
-                        .build());
+                .content();
+
     }
 
     //根据文件名进行单个文件的删除
