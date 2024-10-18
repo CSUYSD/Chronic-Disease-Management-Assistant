@@ -42,7 +42,7 @@ public class RecordController {
         return ResponseEntity.ok(healthRecords);
     }
 
-    @Transactional
+
     @PostMapping("/create")
     public ResponseEntity<String> addHealthRecord(@RequestHeader("Authorization") String token, @Valid @RequestBody HealthRecordDTO healthRecordDTO) {
         System.out.println("Received HealthRecordDTO: " + healthRecordDTO);

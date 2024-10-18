@@ -3,10 +3,12 @@ package com.example.demo.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.example.demo.utility.parser.DtoParser;
+import com.example.demo.model.ai.AnalyseRequest;
+import com.example.demo.service.rabbitmq.RabbitMQService;
+import com.example.demo.utility.GetCurrentUserInfo;
+import com.example.demo.utility.converter.HealthRecordConverter;
+import com.example.demo.utility.converter.PromptConverter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -28,17 +30,19 @@ public class RecordService {
     private final PatientDao patientDao;
     private final AccountDao accountDao;
     private final JwtUtil jwtUtil;
-    private final RedisTemplate redisTemplate;
+    private final RabbitMQService rabbitMQService;
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private GetCurrentUserInfo getCurrentUserInfo;
 
     @Autowired
-    public RecordService(RecordDao recordDao, JwtUtil jwtUtil, @Qualifier("redisTemplate") RedisTemplate redisTemplate, AccountDao accountDao, PatientDao patientDao) {
+    public RecordService(RecordDao recordDao, JwtUtil jwtUtil, AccountDao accountDao, PatientDao patientDao, RabbitMQService rabbitMQService) {
         this.recordDao = recordDao;
         this.patientDao = patientDao;
         this.jwtUtil = jwtUtil;
-        this.redisTemplate = redisTemplate;
         this.accountDao = accountDao;
+        this.rabbitMQService = rabbitMQService;
     }
 
     public List<HealthRecord> getAllRecordsByAccountId(Long accountId) {
@@ -48,38 +52,30 @@ public class RecordService {
     @Transactional
     public void addHealthRecord(@RequestHeader String token, HealthRecordDTO healthRecordDTO) {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
-        String pattern = "login_user:" + userId + ":current_account";
-        String accountId = stringRedisTemplate.opsForValue().get(pattern);
+        Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
         System.out.printf("===============================accountId: %s===============================", accountId);
 
-        Account account = accountDao.findById(Long.valueOf(accountId))
+        Account account = accountDao.findById(accountId)
                 .orElseThrow(() -> new RuntimeException("Account not found for id: " + accountId));
 
         Patient patient = patientDao.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Patient not found for id: " + userId));
 
-        HealthRecord healthRecord = DtoParser.toHealthRecord(healthRecordDTO);
+        HealthRecord healthRecord = HealthRecordConverter.toHealthRecord(healthRecordDTO);
         healthRecord.setAccount(account);
         healthRecord.setUserId(userId);
-
-
         recordDao.save(healthRecord);
+        // Send the latest health record to AI analyser
+        String currentRecord = PromptConverter.parseLatestHealthRecordToPrompt(healthRecordDTO);
+        System.out.printf("===============================currentRecord: %s===============================", currentRecord);
+        rabbitMQService.sendAnalyseRequestToAIAnalyser(new AnalyseRequest(accountId, currentRecord));
     }
 
     @Transactional
     public void updateHealthRecord(Long id, HealthRecordDTO healthRecordDTO) {
         HealthRecord existingRecord = recordDao.findById(id)
                 .orElseThrow(() -> new RuntimeException("Health record not found for id: " + id));
-
-        existingRecord.setSbp(healthRecordDTO.getSbp());
-        existingRecord.setDbp(healthRecordDTO.getDbp());
-        existingRecord.setIsHeadache(healthRecordDTO.getIsHeadache());
-        existingRecord.setIsBackPain(healthRecordDTO.getIsBackPain());
-        existingRecord.setIsChestPain(healthRecordDTO.getIsChestPain());
-        existingRecord.setIsLessUrination(healthRecordDTO.getIsLessUrination());
-        existingRecord.setImportTime(healthRecordDTO.getImportTime());
-        existingRecord.setDescription(healthRecordDTO.getDescription());
-
+        HealthRecordConverter.updateHealthRecordFromDTO(existingRecord, healthRecordDTO);
         recordDao.save(existingRecord);
     }
 
@@ -101,7 +97,7 @@ public class RecordService {
     public List<HealthRecordDTO> getCertainDaysRecords(Long accountId, Integer duration) {
         List<HealthRecord> records = recordDao.findCertainDaysRecords(accountId, duration);
         return records.stream()
-                .map(DtoParser::toHealthRecordDTO)
+                .map(HealthRecordConverter::toHealthRecordDTO)
                 .collect(Collectors.toList());
     }
 }

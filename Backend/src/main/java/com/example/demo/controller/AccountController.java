@@ -49,16 +49,20 @@ public class AccountController {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
 
         try {
-            // 尝试创建账户
             String result = accountService.createAccount(account, userId);
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
-            // 账户创建成功
         } catch (AccountAlreadyExistException e){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("账户名已存在");
-            // 账户名已存在
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("用户未找到");
-            // 用户未找到
+        } catch (RuntimeException e) {
+            if (e.getMessage().equals("无法验证账户名唯一性，请稍后重试")) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+            }
+            // 处理其他 RuntimeException
+            logger.severe(e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("服务器错误");
         } catch (Exception e) {
             logger.severe(e.getMessage());
             e.printStackTrace();

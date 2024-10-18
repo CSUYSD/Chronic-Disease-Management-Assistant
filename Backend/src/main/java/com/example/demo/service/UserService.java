@@ -19,7 +19,7 @@ import com.example.demo.Dao.UserDao;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.UserDTO;
-import com.example.demo.model.Redis.RedisAccount;
+import com.example.demo.model.RedisAccount;
 import com.example.demo.model.Redis.RedisUser;
 import com.example.demo.model.User;
 import com.example.demo.model.UserImpl.Patient;

@@ -3,7 +3,7 @@ package com.example.demo.listener;
 import com.example.demo.model.ai.AnalyseRequest;
 import com.example.demo.service.RecordService;
 import com.example.demo.service.ai.AiAnalyserService;
-import com.example.demo.utility.parser.PromptParser;
+import com.example.demo.utility.converter.PromptConverter;
 import com.example.demo.utility.GetCurrentUserInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -33,10 +33,11 @@ public class AiAnalyser {
         log.info("Received AnalyseRequest for accountId: {}", request.getAccountId());
 
         String currentRecord = request.getContent();
+        System.out.printf("=========================================received currentRecord: %s\n", currentRecord);
         long accountId = request.getAccountId();
         log.debug("Processing current record: {}", currentRecord);
         log.info("Fetching recent records for accountId: {}", accountId);
-        String recentRecords = PromptParser.parseLatestTransactionRecordsToPrompt(recordService.getCertainDaysRecords(accountId, 10));
+        String recentRecords = PromptConverter.parseRecentHealthRecordsToPrompt(recordService.getCertainDaysRecords(accountId, 10));
         log.info("Recent records parsed: {}", recentRecords);
 
         log.info("Analyzing current record with AI service");

@@ -1,6 +1,5 @@
-package com.example.demo.model.Redis;
+package com.example.demo.model;
 
-import com.example.demo.model.HealthRecord;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Data;
@@ -16,13 +15,11 @@ public class RedisAccount {
     private String name;
     private Double total_income;
     private Double total_expense;
-    private List<HealthRecord> records;
 
-    public RedisAccount(Long id, String name, Double total_income, Double total_expense, List<HealthRecord> records) {
+    public RedisAccount(Long id, String name, Double total_income, Double total_expense) {
         this.id = id;
         this.name = name;
         this.total_income = total_income;
         this.total_expense = total_expense;
-        this.records = records;
     }
 }
