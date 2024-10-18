@@ -5,15 +5,16 @@ import com.example.demo.exception.AccountAlreadyExistException;
 import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.AccountDTO;
-import com.example.demo.model.Redis.RedisAccount;
+import com.example.demo.model.RedisAccount;
 import com.example.demo.model.UserImpl.Patient;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.Dao.AccountDao;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -24,16 +25,20 @@ import org.springframework.data.redis.core.RedisTemplate;
 import com.example.demo.exception.UserNotFoundException;
 
 @Service
+@Slf4j
 public class AccountService {
-
-    private final AccountDao accountDao;
-    private final RedisTemplate<String, Object> redisTemplate;
     private final PatientDao patientDao;
+    private final AccountDao accountDao;
 
     @Autowired
-    public AccountService(AccountDao accountDao, RedisTemplate<String, Object> redisTemplate, PatientDao patientDao) {
+    @Qualifier("myRedisTemplate")
+    private RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private ObjectMapper redisObjectMapper;
+
+    @Autowired
+    public AccountService(AccountDao accountDao, PatientDao patientDao) {
         this.accountDao = accountDao;
-        this.redisTemplate = redisTemplate;
         this.patientDao = patientDao;
     }
 
@@ -48,32 +53,44 @@ public class AccountService {
 
     public String createAccount(AccountDTO accountDTO, Long userId) throws UserNotFoundException, AccountAlreadyExistException, AccountNotFoundException {
         String pattern = "login_user:" + userId + ":account*" ;
-        // 获取redis用户信息
         Set<String> keys = redisTemplate.keys(pattern);
-        if (keys.isEmpty()) {
-            throw new RuntimeException("用户未登录或会话已过期");
-        }
-        // 检查账户名是否已存在
-        for (String key : keys){
+        System.out.printf("===============================keys: %s\n", keys);
+
+        // 使用一个标志来跟踪是否所有的反序列化都成功完成
+        boolean allDeserializationSuccessful = true;
+
+        for (String key : keys) {
             Object rawObject = redisTemplate.opsForValue().get(key);
-            if (rawObject instanceof LinkedHashMap) {
-                ObjectMapper objectMapper = new ObjectMapper();
-                RedisAccount redisAccount = objectMapper.convertValue(rawObject, RedisAccount.class);
+            try {
+                RedisAccount redisAccount;
+                if (rawObject instanceof String) {
+                    redisAccount = redisObjectMapper.readValue((String) rawObject, RedisAccount.class);
+                } else {
+                    redisAccount = redisObjectMapper.convertValue(rawObject, RedisAccount.class);
+                }
                 if (redisAccount.getName().equals(accountDTO.getName())) {
                     throw new AccountAlreadyExistException("账户名已存在");
                 }
-            } else if (rawObject instanceof RedisAccount) {
-                RedisAccount redisAccount = (RedisAccount) rawObject;
-                if (redisAccount.getName().equals(accountDTO.getName())) {
-                    throw new AccountAlreadyExistException("账户名已存在");
+            } catch (Exception e) {
+                if (e instanceof AccountAlreadyExistException) {
+                    throw (AccountAlreadyExistException) e;
                 }
+                log.error("Error deserializing Redis object for key: " + key, e);
+                allDeserializationSuccessful = false;
+                break; // 如果出现任何反序列化错误，立即退出循环
             }
         }
-        
+
+        // 如果有任何反序列化失败，抛出异常
+        if (!allDeserializationSuccessful) {
+            throw new RuntimeException("无法验证账户名唯一性，请稍后重试");
+        }
+
+
         // 获取用户,从token里找到的id
         Patient user = patientDao.findById(userId)
-            .orElseThrow(() -> new UserNotFoundException("用户不存在"));
-        
+                .orElseThrow(() -> new UserNotFoundException("用户不存在"));
+
         // 存到PSQL里
         Account newAccount = new Account();
         newAccount.setAccountName(accountDTO.getName());
@@ -89,8 +106,7 @@ public class AccountService {
                         newAccount.getId(),
                         newAccount.getAccountName(),
                         newAccount.getTotalIncome(),
-                        newAccount.getTotalExpense(),
-                        new ArrayList<>());
+                        newAccount.getTotalExpense());
 
         redisTemplate.opsForValue().set(newAccountKey, newRedisAccount);
         return "账户创建成功";
@@ -151,8 +167,7 @@ public class AccountService {
                 account.getId(),
                 account.getAccountName(),
                 account.getTotalIncome(),
-                account.getTotalExpense(),
-                new ArrayList<>());
+                account.getTotalExpense());
         redisTemplate.opsForValue().set(redisKey, redisAccount);
     }
 

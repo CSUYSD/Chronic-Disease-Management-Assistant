@@ -21,6 +21,6 @@ public interface RecordDao extends JpaRepository<HealthRecord, Long> {
     // 根据多个ID和账户ID批量获取记录
     List<HealthRecord> findAllByIdInAndAccountId(List<Long> ids, Long accountId);
 
-    @Query(value = "SELECT * FROM health_records WHERE account_id = :accountId ORDER BY transaction_time DESC, id DESC LIMIT :duration", nativeQuery = true)
+    @Query(value = "SELECT * FROM health_records WHERE account_id = :accountId ORDER BY import_time DESC, id DESC LIMIT :duration", nativeQuery = true)
     List<HealthRecord> findCertainDaysRecords(Long accountId, Integer duration);
 }

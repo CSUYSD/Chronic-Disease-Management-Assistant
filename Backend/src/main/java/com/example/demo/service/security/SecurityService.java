@@ -29,7 +29,7 @@ import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.UserDTO;
-import com.example.demo.model.Redis.RedisAccount;
+import com.example.demo.model.RedisAccount;
 import com.example.demo.model.Redis.RedisUser;
 import com.example.demo.model.Security.UserDetail;
 import com.example.demo.model.UserImpl.Patient;
@@ -135,24 +135,17 @@ public class SecurityService {
         List<Account> accounts = patient.getAccounts();
 
         // 存储账户信息到 Redis
-        String userAccountsKey = "login_user:" + patient.getId() + ":account:" + "initial placeholder";
-        if (accounts.isEmpty()) {
-            redisTemplate.opsForValue().set(userAccountsKey, new ArrayList<>(), 1, TimeUnit.HOURS);
-        } else {
-            List<Long> accountIds = accounts.stream().map(Account::getId).collect(Collectors.toList());
-            redisTemplate.opsForValue().set(userAccountsKey, accountIds, 1, TimeUnit.HOURS);
+        List<Long> accountIds = accounts.stream().map(Account::getId).collect(Collectors.toList());
 
-            for (Account account : accounts) {
-                String redisAccountKey = "login_user:" + patient.getId() + ":account:" + account.getId();
-                RedisAccount redisAccount = new RedisAccount(
-                        account.getId(),
-                        account.getAccountName(),
-                        account.getTotalIncome(),
-                        account.getTotalExpense(),
-                        account.getHealthRecords()
-                );
-                redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
-            }
+        for (Account account : accounts) {
+            String redisAccountKey = "login_user:" + patient.getId() + ":account:" + account.getId();
+            RedisAccount redisAccount = new RedisAccount(
+                    account.getId(),
+                    account.getAccountName(),
+                    account.getTotalIncome(),
+                    account.getTotalExpense()
+            );
+            redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
         }
     }
 
