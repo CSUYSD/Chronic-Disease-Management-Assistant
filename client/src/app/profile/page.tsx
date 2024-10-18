@@ -1,98 +1,80 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
-import { User, Mail, Shield, Key, Activity, Calendar, Clock, Bell } from 'lucide-react'
+import { User, Mail, Shield, Key, Calendar, Heart, UserPlus } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-interface UserProfile {
-    name: string
-    email: string
-    userType: 'patient' | 'companion'
-    avatar: string
-    dateJoined: string
-    lastLogin: string
-    notificationsEnabled: boolean
-    language: string
-}
+import { getProfileAPI } from "@/api/user"
+import { setProfile, selectProfile, selectIsLoading } from '@/store/profileSlice'
+import { AppDispatch } from '@/store'
 
 export default function ProfilePage() {
-    const [profile, setProfile] = useState<UserProfile>({
-        name: '',
-        email: '',
-        userType: 'patient',
-        avatar: '',
-        dateJoined: '',
-        lastLogin: '',
-        notificationsEnabled: true,
-        language: 'en'
-    })
+    const dispatch = useDispatch<AppDispatch>()
+    const profile = useSelector(selectProfile)
+    const isLoading = useSelector(selectIsLoading)
 
     useEffect(() => {
-        // Here you should fetch the user profile from the backend API
-        // This is simulated data
-        setProfile({
-            name: 'John Doe',
-            email: 'john@example.com',
-            userType: 'patient',
-            avatar: '/placeholder.svg?height=100&width=100',
-            dateJoined: '2023-01-15',
-            lastLogin: '2023-05-20',
-            notificationsEnabled: true,
-            language: 'en'
-        })
-    }, [])
+        const fetchProfile = async () => {
+            try {
+                const response = await getProfileAPI()
+                dispatch(setProfile(response.data))
+            } catch (error) {
+                console.error('Failed to fetch profile:', error)
+                toast({
+                    title: "Error",
+                    description: "Failed to load profile. Please try again later.",
+                    variant: "destructive",
+                })
+            }
+        }
+
+        fetchProfile()
+    }, [dispatch])
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full"
+                />
+            </div>
+        )
+    }
+
+    if (!profile) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <p className="text-xl text-gray-600">Failed to load profile. Please try again later.</p>
+            </div>
+        )
+    }
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
-        // Here you should call the backend API to update the user profile
-        console.log('Profile updated:', profile)
-
-        // Show success toast
+        // Here you would call the API to update the profile
         toast({
             title: "Profile Updated",
             description: "Your profile has been successfully updated.",
         })
     }
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target
-        setProfile(prevProfile => ({
-            ...prevProfile,
-            [name]: value
-        }))
-    }
-
-    const handleSwitchChange = (checked: boolean) => {
-        setProfile(prevProfile => ({
-            ...prevProfile,
-            notificationsEnabled: checked
-        }))
-    }
-
-    const handleLanguageChange = (value: string) => {
-        setProfile(prevProfile => ({
-            ...prevProfile,
-            language: value
-        }))
-    }
-
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 min-h-screen">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
                 className="max-w-4xl mx-auto"
             >
-                <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">User Profile</h1>
+                <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center">Your Profile</h1>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
@@ -102,88 +84,82 @@ export default function ProfilePage() {
                     >
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <User className="mr-2 h-5 w-5 text-blue-500" />
+                                <CardTitle className="flex items-center text-2xl text-gray-700">
+                                    <User className="mr-2 h-6 w-6" />
                                     Profile Information
                                 </CardTitle>
-                                <CardDescription>Update your personal information</CardDescription>
+                                <CardDescription>Manage your personal details</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <form onSubmit={handleSubmit} className="space-y-4">
-                                    <div>
-                                        <Label htmlFor="name" className="flex items-center">
-                                            <User className="mr-2 h-4 w-4 text-gray-500" />
-                                            Name
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="username" className="flex items-center text-lg">
+                                            <User className="mr-2 h-5 w-5 text-gray-500" />
+                                            Username
                                         </Label>
                                         <Input
-                                            id="name"
-                                            name="name"
-                                            value={profile.name}
-                                            onChange={handleChange}
-                                            required
-                                            className="mt-1"
+                                            id="username"
+                                            value={profile.username}
+                                            readOnly
+                                            className="bg-gray-100"
                                         />
                                     </div>
-                                    <div>
-                                        <Label htmlFor="email" className="flex items-center">
-                                            <Mail className="mr-2 h-4 w-4 text-gray-500" />
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email" className="flex items-center text-lg">
+                                            <Mail className="mr-2 h-5 w-5 text-gray-500" />
                                             Email
                                         </Label>
                                         <Input
                                             id="email"
-                                            name="email"
-                                            type="email"
                                             value={profile.email}
-                                            onChange={handleChange}
-                                            required
-                                            className="mt-1"
+                                            readOnly
+                                            className="bg-gray-100"
                                         />
                                     </div>
-                                    <div>
-                                        <Label htmlFor="userType" className="flex items-center">
-                                            <Shield className="mr-2 h-4 w-4 text-gray-500" />
-                                            User Type
+                                    <div className="space-y-2">
+                                        <Label htmlFor="dob" className="flex items-center text-lg">
+                                            <Calendar className="mr-2 h-5 w-5 text-gray-500" />
+                                            Date of Birth
                                         </Label>
                                         <Input
-                                            id="userType"
-                                            name="userType"
-                                            value={profile.userType}
-                                            disabled
-                                            className="mt-1"
+                                            id="dob"
+                                            value={profile.dob}
+                                            readOnly
+                                            className="bg-gray-100"
                                         />
                                     </div>
-                                    <div>
-                                        <Label htmlFor="language" className="flex items-center">
-                                            <Activity className="mr-2 h-4 w-4 text-gray-500" />
-                                            Language
+                                    <div className="space-y-2">
+                                        <Label htmlFor="role" className="flex items-center text-lg">
+                                            <Shield className="mr-2 h-5 w-5 text-gray-500" />
+                                            Role
                                         </Label>
-                                        <Select
-                                            value={profile.language}
-                                            onValueChange={handleLanguageChange}
-                                        >
-                                            <SelectTrigger className="mt-1">
-                                                <SelectValue placeholder="Select a language" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="en">English</SelectItem>
-                                                <SelectItem value="es">Español</SelectItem>
-                                                <SelectItem value="fr">Français</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <Label htmlFor="notifications" className="flex items-center">
-                                            <Bell className="mr-2 h-4 w-4 text-gray-500" />
-                                            Enable Notifications
-                                        </Label>
-                                        <Switch
-                                            id="notifications"
-                                            checked={profile.notificationsEnabled}
-                                            onCheckedChange={handleSwitchChange}
+                                        <Input
+                                            id="role"
+                                            value={profile.role}
+                                            readOnly
+                                            className="bg-gray-100"
                                         />
                                     </div>
-                                    <Button type="submit" className="w-full">
-                                        <Key className="mr-2 h-4 w-4" /> Update Profile
+                                    {profile.role === 'patient' && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="healthMetrics" className="flex items-center text-lg">
+                                                <Heart className="mr-2 h-5 w-5 text-red-500" />
+                                                Health Metrics
+                                            </Label>
+                                            <Button className="w-full">View Health Dashboard</Button>
+                                        </div>
+                                    )}
+                                    {profile.role === 'companion' && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="patients" className="flex items-center text-lg">
+                                                <UserPlus className="mr-2 h-5 w-5 text-green-500" />
+                                                Patients
+                                            </Label>
+                                            <Button className="w-full">Manage Patients</Button>
+                                        </div>
+                                    )}
+                                    <Button type="submit" className="w-full text-lg py-6">
+                                        <Key className="mr-2 h-5 w-5" /> Update Profile
                                     </Button>
                                 </form>
                             </CardContent>
@@ -196,32 +172,40 @@ export default function ProfilePage() {
                     >
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <User className="mr-2 h-5 w-5 text-green-500" />
+                                <CardTitle className="flex items-center text-2xl text-gray-700">
+                                    <User className="mr-2 h-6 w-6" />
                                     Account Summary
                                 </CardTitle>
-                                <CardDescription>Your account details</CardDescription>
+                                <CardDescription>Your account details at a glance</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
+                            <CardContent className="space-y-6">
                                 <div className="flex justify-center">
-                                    <Avatar className="h-24 w-24">
-                                        <AvatarImage src={profile.avatar} alt={profile.name} />
-                                        <AvatarFallback>{profile.name.charAt(0)}</AvatarFallback>
+                                    <Avatar className="h-32 w-32">
+                                        <AvatarImage src={profile.avatar || '/default-avatar.png'} alt={profile.username} />
+                                        <AvatarFallback>{profile.username.charAt(0).toUpperCase()}</AvatarFallback>
                                     </Avatar>
                                 </div>
                                 <div className="text-center">
-                                    <h2 className="text-xl font-semibold">{profile.name}</h2>
-                                    <p className="text-sm text-gray-500">{profile.email}</p>
+                                    <h2 className="text-2xl font-semibold text-gray-800">{profile.username}</h2>
+                                    <p className="text-lg text-gray-600">{profile.email}</p>
+                                    <p className="text-md text-gray-600 mt-2 capitalize">{profile.role}</p>
                                 </div>
-                                <div className="pt-4 space-y-2">
-                                    <div className="flex items-center text-sm">
-                                        <Calendar className="mr-2 h-4 w-4 text-gray-500" />
-                                        <span>Joined: {profile.dateJoined}</span>
+                                <div className="pt-4 space-y-4">
+                                    <div className="flex items-center text-lg">
+                                        <Calendar className="mr-2 h-5 w-5 text-gray-500" />
+                                        <span>Born: {profile.dob}</span>
                                     </div>
-                                    <div className="flex items-center text-sm">
-                                        <Clock className="mr-2 h-4 w-4 text-gray-500" />
-                                        <span>Last Login: {profile.lastLogin}</span>
-                                    </div>
+                                    <motion.div
+                                        className="bg-gray-100 p-4 rounded-lg"
+                                        whileHover={{ scale: 1.05 }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                    >
+                                        <p className="text-gray-800 font-medium">
+                                            {profile.role === 'patient'
+                                                ? "Track your health journey with us!"
+                                                : "Help your loved ones stay healthy!"}
+                                        </p>
+                                    </motion.div>
                                 </div>
                             </CardContent>
                         </Card>
