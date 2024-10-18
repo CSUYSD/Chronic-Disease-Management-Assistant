@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { motion } from 'framer-motion'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { loginAPI } from "@/api/user"
 import { toast } from "@/hooks/use-toast"
-import { setToken } from "@/utils";
+import { useDispatch } from 'react-redux'
+import { setProfile } from '@/store/profileSlice'
+import {setToken} from "@/utils";
 
 interface LoginFormData {
     username: string;
@@ -19,6 +21,7 @@ interface LoginFormData {
 
 export default function LoginPage() {
     const router = useRouter()
+    const dispatch = useDispatch()
     const [isLoading, setIsLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
 
@@ -39,6 +42,16 @@ export default function LoginPage() {
                 description: "Welcome back!",
             })
             setToken(response.data.token)
+            // Update the profile with the data from the login response
+            const profileData = {
+                username: response.data.username,
+                role: response.data.role,
+                email: null,
+                avatar: null,
+                dob: null
+            }
+            console.log('Updating profile with:', profileData)
+            dispatch(setProfile(profileData))
             router.push('/dashboard')
         } catch (error) {
             console.error('Login failed:', error)

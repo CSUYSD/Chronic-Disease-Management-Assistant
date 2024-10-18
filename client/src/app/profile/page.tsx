@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
@@ -13,29 +13,41 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getProfileAPI } from "@/api/user"
 import { setProfile, selectProfile, selectIsLoading } from '@/store/profileSlice'
 import { AppDispatch } from '@/store'
+import { selectProfile as selectStoredProfile } from '@/store/profileSlice'
 
 export default function ProfilePage() {
     const dispatch = useDispatch<AppDispatch>()
     const profile = useSelector(selectProfile)
     const isLoading = useSelector(selectIsLoading)
+    const storedProfile = useSelector(selectStoredProfile)
+
+    const fetchProfile = useCallback(async () => {
+        try {
+            const response = await getProfileAPI()
+            const newProfileData = {
+                ...response.data,
+                role: storedProfile?.role || response.data.role
+            }
+
+            // Check if the new profile data is different from the stored profile
+            if (JSON.stringify(newProfileData) !== JSON.stringify(storedProfile)) {
+                dispatch(setProfile(newProfileData))
+            }
+        } catch (error) {
+            console.error('Failed to fetch profile:', error)
+            toast({
+                title: "Error",
+                description: "Failed to load profile. Please try again later.",
+                variant: "destructive",
+            })
+        }
+    }, [dispatch, storedProfile])
 
     useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                const response = await getProfileAPI()
-                dispatch(setProfile(response.data))
-            } catch (error) {
-                console.error('Failed to fetch profile:', error)
-                toast({
-                    title: "Error",
-                    description: "Failed to load profile. Please try again later.",
-                    variant: "destructive",
-                })
-            }
+        if (!storedProfile) {
+            fetchProfile()
         }
-
-        fetchProfile()
-    }, [dispatch])
+    }, [fetchProfile, storedProfile])
 
     if (isLoading) {
         return (

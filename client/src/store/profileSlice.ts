@@ -4,10 +4,10 @@ import { RootState } from '@/store'
 interface ProfileState {
     profile: {
         username: string
-        email: string
-        role: 'patient' | 'companion'
-        avatar: string
-        dob: string
+        email: string | null
+        role: 'companion' | 'patient'
+        avatar: string | null
+        dob: string | null
     } | null
     isLoading: boolean
     error: string | null
@@ -24,6 +24,7 @@ export const profileSlice = createSlice({
     initialState,
     reducers: {
         setProfile: (state, action: PayloadAction<ProfileState['profile']>) => {
+            console.log('Setting profile in Redux:', action.payload)
             state.profile = action.payload
             state.isLoading = false
             state.error = null
