@@ -56,7 +56,7 @@ CREATE TABLE account (
 );
 
 -- 创建 health_records 表
-CREATE TABLE health_record (
+CREATE TABLE health_records (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     SBP INTEGER,
     DBP INTEGER,
