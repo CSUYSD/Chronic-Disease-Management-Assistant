@@ -1,4 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/store'
 
 interface FileMetadata {
     name: string;
@@ -28,4 +30,8 @@ const fileSlice = createSlice({
 })
 
 export const { setUploadedFile, clearUploadedFile } = fileSlice.actions;
+
+// Encapsulated selector function
+export const useUploadedFile = () => useSelector((state: RootState) => state.file.uploadedFile)
+
 export default fileSlice.reducer;

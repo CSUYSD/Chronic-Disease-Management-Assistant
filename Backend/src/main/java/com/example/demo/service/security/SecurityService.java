@@ -113,8 +113,13 @@ public class SecurityService {
             // **Redis 存储基础信息
             storeUserInRedis(user, token);
 
+            //提取role name
+            String role = user.getRole().getRoleName();
+            String roleName = role.replaceFirst("ROLE_", "").toLowerCase();
+
             // **保存登录成功信息
             Map<String, Object> response = new HashMap<>();
+            response.put("role", roleName);
             response.put("token", token);
             response.put("username", user.getUsername());
 

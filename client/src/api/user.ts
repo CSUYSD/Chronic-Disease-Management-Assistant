@@ -9,7 +9,10 @@ interface LoginFormData {
 interface SignUpFormData {
     username: string;
     email: string;
+    phone: string;
     password: string;
+    dob: string;
+
 }
 
 interface UpdateUserDetails {
@@ -38,9 +41,10 @@ export function loginAPI(formData: LoginFormData): Promise<AxiosResponse> {
 /**
  * User Sign Up API
  * @param {SignUpFormData} formData - The sign up form data
+ * @param role
  * @returns {Promise<AxiosResponse>} - The API response
  */
-export function signUpAPI(formData: SignUpFormData): Promise<AxiosResponse> {
+export function signUpAPI(formData: SignUpFormData, role: string): Promise<AxiosResponse> {
     console.log("Sending sign up data:", formData);
     return request({
         url: '/signup',
@@ -48,7 +52,8 @@ export function signUpAPI(formData: SignUpFormData): Promise<AxiosResponse> {
         headers: {
             'Content-Type': 'application/json'
         },
-        data: formData
+        data: formData,
+        params: {role}
     });
 }
 
