@@ -1,98 +1,113 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useCallback } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
-import { User, Mail, Shield, Key, Activity, Calendar, Clock, Bell } from 'lucide-react'
+import { User, Mail, Key, Calendar, Heart } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-interface UserProfile {
-    name: string
-    email: string
-    userType: 'patient' | 'companion'
-    avatar: string
-    dateJoined: string
-    lastLogin: string
-    notificationsEnabled: boolean
-    language: string
-}
+import { getProfileAPI } from "@/api/user"
+import { setProfile, selectProfile, selectIsLoading } from '@/store/profileSlice'
+import { AppDispatch } from '@/store'
+import { selectProfile as selectStoredProfile } from '@/store/profileSlice'
 
 export default function ProfilePage() {
-    const [profile, setProfile] = useState<UserProfile>({
-        name: '',
-        email: '',
-        userType: 'patient',
-        avatar: '',
-        dateJoined: '',
-        lastLogin: '',
-        notificationsEnabled: true,
-        language: 'en'
-    })
+    const dispatch = useDispatch<AppDispatch>()
+    const profile = useSelector(selectProfile)
+    const isLoading = useSelector(selectIsLoading)
+    const storedProfile = useSelector(selectStoredProfile)
+
+    const fetchProfile = useCallback(async () => {
+        try {
+            const response = await getProfileAPI()
+            const newProfileData = {
+                ...response.data,
+                role: storedProfile?.role || response.data.role
+            }
+
+            // Check if the new profile data is different from the stored profile
+            if (JSON.stringify(newProfileData) !== JSON.stringify(storedProfile)) {
+                dispatch(setProfile(newProfileData))
+            }
+        } catch (error) {
+            console.error('Failed to fetch profile:', error)
+            toast({
+                title: "Error",
+                description: "Failed to load profile. Please try again later.",
+                variant: "destructive",
+            })
+        }
+    }, [dispatch, storedProfile])
 
     useEffect(() => {
-        // Here you should fetch the user profile from the backend API
-        // This is simulated data
-        setProfile({
-            name: 'John Doe',
-            email: 'john@example.com',
-            userType: 'patient',
-            avatar: '/placeholder.svg?height=100&width=100',
-            dateJoined: '2023-01-15',
-            lastLogin: '2023-05-20',
-            notificationsEnabled: true,
-            language: 'en'
-        })
-    }, [])
+        if (!storedProfile) {
+            fetchProfile()
+        }
+    }, [fetchProfile, storedProfile])
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <motion.div
+                    animate={{
+                        rotate: 360,
+                        scale: [1, 1.2, 1],
+                    }}
+                    transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                    }}
+                    className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full"
+                />
+            </div>
+        )
+    }
+
+    if (!profile) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <motion.p
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="text-xl text-gray-600"
+                >
+                    Failed to load profile. Please try again later.
+                </motion.p>
+            </div>
+        )
+    }
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
-        // Here you should call the backend API to update the user profile
-        console.log('Profile updated:', profile)
-
-        // Show success toast
+        // Here you would call the API to update the profile
         toast({
             title: "Profile Updated",
             description: "Your profile has been successfully updated.",
         })
     }
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target
-        setProfile(prevProfile => ({
-            ...prevProfile,
-            [name]: value
-        }))
-    }
-
-    const handleSwitchChange = (checked: boolean) => {
-        setProfile(prevProfile => ({
-            ...prevProfile,
-            notificationsEnabled: checked
-        }))
-    }
-
-    const handleLanguageChange = (value: string) => {
-        setProfile(prevProfile => ({
-            ...prevProfile,
-            language: value
-        }))
-    }
-
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 min-h-screen">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
                 className="max-w-4xl mx-auto"
             >
-                <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">User Profile</h1>
+                <motion.h1
+                    className="text-4xl font-bold text-gray-800 mb-8 text-center"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                    Your Profile
+                </motion.h1>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
@@ -102,89 +117,60 @@ export default function ProfilePage() {
                     >
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <User className="mr-2 h-5 w-5 text-blue-500" />
+                                <CardTitle className="flex items-center text-2xl text-gray-700">
+                                    <User className="mr-2 h-6 w-6" />
                                     Profile Information
                                 </CardTitle>
-                                <CardDescription>Update your personal information</CardDescription>
+                                <CardDescription>Manage your personal details</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <form onSubmit={handleSubmit} className="space-y-4">
-                                    <div>
-                                        <Label htmlFor="name" className="flex items-center">
-                                            <User className="mr-2 h-4 w-4 text-gray-500" />
-                                            Name
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    <AnimatePresence>
+                                        {['username', 'email', 'dob'].map((field, index) => (
+                                            <motion.div
+                                                key={field}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -20 }}
+                                                transition={{ duration: 0.3, delay: index * 0.1 }}
+                                                className="space-y-2"
+                                            >
+                                                <Label htmlFor={field} className="flex items-center text-lg">
+                                                    {field === 'username' && <User className="mr-2 h-5 w-5 text-gray-500" />}
+                                                    {field === 'email' && <Mail className="mr-2 h-5 w-5 text-gray-500" />}
+                                                    {field === 'dob' && <Calendar className="mr-2 h-5 w-5 text-gray-500" />}
+                                                    {field.charAt(0).toUpperCase() + field.slice(1)}
+                                                </Label>
+                                                <Input
+                                                    id={field}
+                                                    value={profile[field]}
+                                                    readOnly
+                                                    className="bg-gray-100"
+                                                />
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                    <motion.div
+                                        className="space-y-2"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: 0.3 }}
+                                    >
+                                        <Label htmlFor="healthMetrics" className="flex items-center text-lg">
+                                            <Heart className="mr-2 h-5 w-5 text-red-500" />
+                                            Health Metrics
                                         </Label>
-                                        <Input
-                                            id="name"
-                                            name="name"
-                                            value={profile.name}
-                                            onChange={handleChange}
-                                            required
-                                            className="mt-1"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="email" className="flex items-center">
-                                            <Mail className="mr-2 h-4 w-4 text-gray-500" />
-                                            Email
-                                        </Label>
-                                        <Input
-                                            id="email"
-                                            name="email"
-                                            type="email"
-                                            value={profile.email}
-                                            onChange={handleChange}
-                                            required
-                                            className="mt-1"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="userType" className="flex items-center">
-                                            <Shield className="mr-2 h-4 w-4 text-gray-500" />
-                                            User Type
-                                        </Label>
-                                        <Input
-                                            id="userType"
-                                            name="userType"
-                                            value={profile.userType}
-                                            disabled
-                                            className="mt-1"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="language" className="flex items-center">
-                                            <Activity className="mr-2 h-4 w-4 text-gray-500" />
-                                            Language
-                                        </Label>
-                                        <Select
-                                            value={profile.language}
-                                            onValueChange={handleLanguageChange}
-                                        >
-                                            <SelectTrigger className="mt-1">
-                                                <SelectValue placeholder="Select a language" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="en">English</SelectItem>
-                                                <SelectItem value="es">Español</SelectItem>
-                                                <SelectItem value="fr">Français</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <Label htmlFor="notifications" className="flex items-center">
-                                            <Bell className="mr-2 h-4 w-4 text-gray-500" />
-                                            Enable Notifications
-                                        </Label>
-                                        <Switch
-                                            id="notifications"
-                                            checked={profile.notificationsEnabled}
-                                            onCheckedChange={handleSwitchChange}
-                                        />
-                                    </div>
-                                    <Button type="submit" className="w-full">
-                                        <Key className="mr-2 h-4 w-4" /> Update Profile
-                                    </Button>
+                                        <Button className="w-full">View Health Dashboard</Button>
+                                    </motion.div>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: 0.4 }}
+                                    >
+                                        <Button type="submit" className="w-full text-lg py-6">
+                                            <Key className="mr-2 h-5 w-5" /> Update Profile
+                                        </Button>
+                                    </motion.div>
                                 </form>
                             </CardContent>
                         </Card>
@@ -196,33 +182,52 @@ export default function ProfilePage() {
                     >
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <User className="mr-2 h-5 w-5 text-green-500" />
+                                <CardTitle className="flex items-center text-2xl text-gray-700">
+                                    <User className="mr-2 h-6 w-6" />
                                     Account Summary
                                 </CardTitle>
-                                <CardDescription>Your account details</CardDescription>
+                                <CardDescription>Your account details at a glance</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex justify-center">
-                                    <Avatar className="h-24 w-24">
-                                        <AvatarImage src={profile.avatar} alt={profile.name} />
-                                        <AvatarFallback>{profile.name.charAt(0)}</AvatarFallback>
+                            <CardContent className="space-y-6">
+                                <motion.div
+                                    className="flex justify-center"
+                                    whileHover={{ scale: 1.1 }}
+                                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                >
+                                    <Avatar className="h-32 w-32">
+                                        <AvatarImage src={profile.avatar || '/default-avatar.png'} alt={profile.username} />
+                                        <AvatarFallback>{profile.username.charAt(0).toUpperCase()}</AvatarFallback>
                                     </Avatar>
-                                </div>
-                                <div className="text-center">
-                                    <h2 className="text-xl font-semibold">{profile.name}</h2>
-                                    <p className="text-sm text-gray-500">{profile.email}</p>
-                                </div>
-                                <div className="pt-4 space-y-2">
-                                    <div className="flex items-center text-sm">
-                                        <Calendar className="mr-2 h-4 w-4 text-gray-500" />
-                                        <span>Joined: {profile.dateJoined}</span>
+                                </motion.div>
+                                <motion.div
+                                    className="text-center"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.6 }}
+                                >
+                                    <h2 className="text-2xl font-semibold text-gray-800">{profile.username}</h2>
+                                    <p className="text-lg text-gray-600">{profile.email}</p>
+                                </motion.div>
+                                <motion.div
+                                    className="pt-4 space-y-4"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.8 }}
+                                >
+                                    <div className="flex items-center text-lg">
+                                        <Calendar className="mr-2 h-5 w-5 text-gray-500" />
+                                        <span>Born: {profile.dob}</span>
                                     </div>
-                                    <div className="flex items-center text-sm">
-                                        <Clock className="mr-2 h-4 w-4 text-gray-500" />
-                                        <span>Last Login: {profile.lastLogin}</span>
-                                    </div>
-                                </div>
+                                    <motion.div
+                                        className="bg-gray-100 p-4 rounded-lg"
+                                        whileHover={{ scale: 1.05 }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                    >
+                                        <p className="text-gray-800 font-medium">
+                                            Track your health journey with us!
+                                        </p>
+                                    </motion.div>
+                                </motion.div>
                             </CardContent>
                         </Card>
                     </motion.div>

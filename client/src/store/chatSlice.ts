@@ -1,4 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/store'
 
 interface Message {
     id: number
@@ -46,5 +48,13 @@ const chatSlice = createSlice({
 })
 
 export const { addChat, updateChat, deleteChat, setCurrentChatId } = chatSlice.actions
+
+// Encapsulated selector functions
+export const useChats = () => useSelector((state: RootState) => state.chat.chats)
+export const useCurrentChatId = () => useSelector((state: RootState) => state.chat.currentChatId)
+export const useCurrentChat = () => useSelector((state: RootState) => {
+    const currentChatId = state.chat.currentChatId
+    return state.chat.chats.find(chat => chat.id === currentChatId) || state.chat.chats[0]
+})
 
 export default chatSlice.reducer

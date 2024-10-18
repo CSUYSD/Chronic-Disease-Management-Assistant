@@ -7,28 +7,68 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 import { motion } from 'framer-motion'
-import { User, Mail, Lock, Users } from 'lucide-react'
+import { User, Mail, Lock, Users, Phone, Calendar as CalendarIcon, Eye, EyeOff } from 'lucide-react'
+import { signUpAPI } from "@/api/user"
+import { toast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
+
+interface SignUpFormData {
+    username: string;
+    email: string;
+    phone: string;
+    password: string;
+    dob: string;
+}
+
+// Utility function to format date
+const formatDate = (date: Date | undefined): string => {
+    if (!date) return '';
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${year}-${month}-${day}`;
+}
 
 export default function RegisterPage() {
     const [userType, setUserType] = useState<'patient' | 'companion'>('patient')
+    const [isLoading, setIsLoading] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
+    const [date, setDate] = useState<Date>()
     const router = useRouter()
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
+        setIsLoading(true)
         const formData = new FormData(event.currentTarget)
-        const userData = {
-            username: formData.get('username'),
-            email: formData.get('email'),
-            password: formData.get('password'),
-            userType: userType,
+        const userData: SignUpFormData = {
+            username: formData.get('username') as string,
+            email: formData.get('email') as string,
+            phone: formData.get('phone') as string,
+            password: formData.get('password') as string,
+            dob: formatDate(date),
         }
 
-        // Here you should call the backend API for registration
-        console.log('Register user:', userData)
-
-        // Redirect to the login page after successful registration
-        router.push('/login')
+        try {
+            const response = await signUpAPI(userData, userType)
+            console.log('Registration successful:', response.data)
+            toast({
+                title: "Registration Successful",
+                description: "You can now log in with your new account.",
+            })
+            router.push('/login')
+        } catch (error) {
+            console.error('Registration failed:', error)
+            toast({
+                title: "Registration Failed",
+                description: "Please try again later.",
+                variant: "destructive",
+            })
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (
@@ -37,7 +77,7 @@ export default function RegisterPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="w-full max-w-3xl" // Increased max-width here
+                className="w-full max-w-3xl"
             >
                 <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
                     <CardHeader>
@@ -62,11 +102,65 @@ export default function RegisterPage() {
                                     <Input id="email" name="email" type="email" required className="text-lg p-3" />
                                 </div>
                                 <div className="space-y-2">
+                                    <Label htmlFor="phone" className="flex items-center text-lg">
+                                        <Phone className="mr-2 h-5 w-5" />
+                                        Phone
+                                    </Label>
+                                    <Input id="phone" name="phone" type="tel" required className="text-lg p-3" />
+                                </div>
+                                <div className="space-y-2">
                                     <Label htmlFor="password" className="flex items-center text-lg">
                                         <Lock className="mr-2 h-5 w-5" />
                                         Password
                                     </Label>
-                                    <Input id="password" name="password" type="password" required className="text-lg p-3" />
+                                    <div className="relative">
+                                        <Input
+                                            id="password"
+                                            name="password"
+                                            type={showPassword ? "text" : "password"}
+                                            required
+                                            className="text-lg p-3 pr-10"
+                                        />
+                                        <button
+                                            type="button"
+                                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="h-5 w-5 text-gray-400" />
+                                            ) : (
+                                                <Eye className="h-5 w-5 text-gray-400" />
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="dob" className="flex items-center text-lg">
+                                        <CalendarIcon className="mr-2 h-5 w-5" />
+                                        Date of Birth
+                                    </Label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant={"outline"}
+                                                className={cn(
+                                                    "w-full justify-start text-left font-normal",
+                                                    !date && "text-muted-foreground"
+                                                )}
+                                            >
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {date ? formatDate(date) : <span>Pick a date</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={date}
+                                                onSelect={setDate}
+                                                initialFocus
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="flex items-center text-lg">
@@ -89,11 +183,13 @@ export default function RegisterPage() {
                                     </RadioGroup>
                                 </div>
                             </div>
-                            <Button type="submit" className="w-full text-lg py-6">Register</Button>
+                            <Button type="submit" className="w-full text-lg py-6" disabled={isLoading}>
+                                {isLoading ? 'Registering...' : 'Register'}
+                            </Button>
                         </form>
                     </CardContent>
                     <CardFooter className="flex justify-center">
-                        <Button variant="link" onClick={() => router.push('/')} className="text-lg">
+                        <Button variant="link" onClick={() => router.push('/login')} className="text-lg">
                             Already have an account? Login
                         </Button>
                     </CardFooter>

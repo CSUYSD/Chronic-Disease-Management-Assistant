@@ -12,11 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
 import { FluxMessageWithHistoryAPI, UploadFileAPI, ChatWithFileAPI, ClearFileAPI } from '@/api/ai'
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch } from 'react-redux'
 import { v4 as uuidv4 } from 'uuid'
-import { addChat, updateChat, deleteChat, setCurrentChatId } from '@/store/chatSlice'
-import { setUploadedFile, clearUploadedFile } from '@/store/fileSlice'
-import { AppDispatch, RootState } from '@/store'
+import { addChat, updateChat, deleteChat, setCurrentChatId, useChats, useCurrentChatId, useCurrentChat } from '@/store/chatSlice'
+import { setUploadedFile, clearUploadedFile, useUploadedFile } from '@/store/fileSlice'
+import { AppDispatch } from '@/store'
 import { ErrorBoundary } from 'react-error-boundary'
 
 interface Message {
@@ -50,9 +50,10 @@ function ErrorFallback({error, resetErrorBoundary}) {
 
 export default function AiChatPage() {
     const dispatch = useDispatch<AppDispatch>()
-    const chats = useSelector((state: RootState) => state.chat.chats)
-    const currentChatId = useSelector((state: RootState) => state.chat.currentChatId)
-    const uploadedFile = useSelector((state: RootState) => state.file.uploadedFile)
+    const chats = useChats()
+    const currentChatId = useCurrentChatId()
+    const currentChat = useCurrentChat()
+    const uploadedFile = useUploadedFile()
 
     const [input, setInput] = useState('')
     const [isTyping, setIsTyping] = useState(false)
@@ -74,8 +75,6 @@ export default function AiChatPage() {
             createNewChat()
         }
     }, [chats])
-
-    const currentChat = chats.find(chat => chat.id === currentChatId) || chats[0]
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -158,7 +157,6 @@ export default function AiChatPage() {
 
             try {
                 await UploadFileAPI(formData)
-                // 只传递文件的元数据
                 dispatch(setUploadedFile({
                     name: file.name,
                     size: file.size,
@@ -346,7 +344,8 @@ export default function AiChatPage() {
                                             style={{ maxWidth: '70%' }}
                                             initial={{ scale: 0.8, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
-                                            transition={{ duration: 0.3, delay: index * 0.1 }}
+                                            transition={{ duration: 0.3,
+                                                delay: index * 0.1 }}
                                         >
                                             {message.text}
                                         </motion.div>
@@ -479,7 +478,7 @@ export default function AiChatPage() {
                             <Input
                                 id="chatName"
                                 value={newChatName}
-                                onChange={(e) =>   setNewChatName(e.target.value)}
+                                onChange={(e) => setNewChatName(e.target.value)}
                                 className="col-span-3 mt-1"
                             />
                         </div>

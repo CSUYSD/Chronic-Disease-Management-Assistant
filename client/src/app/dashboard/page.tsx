@@ -1,32 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
+import { selectProfile, selectIsLoading } from '@/store/profileSlice'
 import { PatientDashboard } from './PatientDashboard'
 import { CompanionDashboard } from './CompanionDashboard'
 
-interface User {
-    role: 'patient' | 'companion'
-}
-
 export default function Dashboard() {
-    const [user, setUser] = useState<User | null>(null)
-    const [loading, setLoading] = useState(true)
+    const profile = useSelector(selectProfile)
+    const isLoading = useSelector(selectIsLoading)
 
-    useEffect(() => {
-        const fetchUserRole = async () => {
-            setLoading(true)
-            // Simulating API call to get user role
-            await new Promise(resolve => setTimeout(resolve, 1000))
-            const userRole = Math.random() > 0.5 ? 'patient' : 'companion'
-            setUser({ role: userRole })
-            setLoading(false)
-        }
-
-        fetchUserRole()
-    }, [])
-
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center h-screen">
                 <motion.div
@@ -52,9 +36,9 @@ export default function Dashboard() {
                 animate={{ x: 0 }}
                 transition={{ duration: 0.5 }}
             >
-                {user?.role === 'patient' ? 'Patient Dashboard' : 'Companion Dashboard'}
+                {profile?.role === 'patient' ? 'Patient Dashboard' : 'Companion Dashboard'}
             </motion.h1>
-            {user?.role === 'patient' ? <PatientDashboard /> : <CompanionDashboard />}
+            {profile?.role === 'patient' ? <PatientDashboard /> : <CompanionDashboard />}
         </motion.div>
     )
 }

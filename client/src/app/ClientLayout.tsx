@@ -5,10 +5,23 @@ import { usePathname } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from 'framer-motion'
 import { Home, MessageSquare, Mail, User, LogOut } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { logoutAPI } from "@/api/user";
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
     const showSidebar = !['/login', '/register', '/'].includes(pathname)
+
+    const router = useRouter()
+
+    const handleLogout = async () => {
+        try {
+            await logoutAPI()
+            router.push('/login')
+        } catch (error) {
+            console.error('Logout failed:', error)
+        }
+    }
 
     return (
         <div className="flex h-screen bg-gray-100">
@@ -51,7 +64,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                             </Button>
                         </nav>
                         <div className="p-4 border-t mt-auto">
-                            <Button variant="outline" className="w-full">
+                            <Button variant="outline" className="w-full" onClick={handleLogout}>
                                 <LogOut className="mr-2 h-4 w-4" />
                                 Logout
                             </Button>

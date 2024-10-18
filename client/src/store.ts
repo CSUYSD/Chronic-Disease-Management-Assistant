@@ -1,11 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit'
-import chatReducer from './store/chatSlice'
-import fileReducer from './store/fileSlice'
+import chatReducer from '@/store/chatSlice'
+import fileReducer from '@/store/fileSlice'
+import profileReducer from '@/store/profileSlice'
 
 export const store = configureStore({
     reducer: {
         chat: chatReducer,
         file: fileReducer,
+        profile: profileReducer,
     },
 })
 
