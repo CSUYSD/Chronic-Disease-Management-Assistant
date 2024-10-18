@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import com.example.demo.Dao.CompanionDao;
 import com.example.demo.model.User;
-import com.example.demo.model.UserImpl.Companion;
+import com.example.demo.model.userimpl.Companion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -31,11 +31,11 @@ import com.example.demo.model.Account;
 import com.example.demo.model.dto.UserDTO;
 import com.example.demo.model.RedisAccount;
 import com.example.demo.model.Redis.RedisUser;
-import com.example.demo.model.Security.UserDetail;
-import com.example.demo.model.UserImpl.Patient;
+import com.example.demo.model.security.UserDetail;
+import com.example.demo.model.userimpl.Patient;
 import com.example.demo.model.UserRole;
 import com.example.demo.utility.jwt.JwtUtil;
-import com.example.demo.model.Security.LoginVo;
+import com.example.demo.model.security.LoginVo;
 
 @Service
 public class SecurityService {

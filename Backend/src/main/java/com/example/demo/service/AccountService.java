@@ -6,7 +6,7 @@ import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.AccountDTO;
 import com.example.demo.model.RedisAccount;
-import com.example.demo.model.UserImpl.Patient;
+import com.example.demo.model.userimpl.Patient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.Dao.AccountDao;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 

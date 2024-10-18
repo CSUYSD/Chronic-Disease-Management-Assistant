@@ -2,11 +2,9 @@ package com.example.demo.Dao;
 
 import java.util.Optional;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.example.demo.model.UserImpl.Patient;
+import com.example.demo.model.userimpl.Patient;
 
 
 public interface PatientDao extends JpaRepository<Patient, Long> {

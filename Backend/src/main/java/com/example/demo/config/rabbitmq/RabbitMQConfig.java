@@ -8,9 +8,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
     @Bean
-    public Queue orderStateToStoreQueue() {
+    public Queue newRecordToAiAnalyserQueue() {
         return new Queue("new.record.to.ai.analyser", true);
     }
+
+    @Bean
+    public Queue healthReportToChatbotQueue() {return new Queue("health.report.to.chatbot", true); }
 
     @Bean
     public MessageConverter jsonMessageConverter() {

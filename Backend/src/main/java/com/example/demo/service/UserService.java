@@ -22,7 +22,7 @@ import com.example.demo.model.dto.UserDTO;
 import com.example.demo.model.RedisAccount;
 import com.example.demo.model.Redis.RedisUser;
 import com.example.demo.model.User;
-import com.example.demo.model.UserImpl.Patient;
+import com.example.demo.model.userimpl.Patient;
 import com.example.demo.utility.jwt.JwtUtil;
 
 @Service

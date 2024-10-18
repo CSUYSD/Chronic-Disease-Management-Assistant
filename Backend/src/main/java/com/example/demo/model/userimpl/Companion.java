@@ -1,13 +1,11 @@
-package com.example.demo.model.UserImpl;
+package com.example.demo.model.userimpl;
 
 import com.example.demo.model.User;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
 
 @Entity
 public class Companion extends User {

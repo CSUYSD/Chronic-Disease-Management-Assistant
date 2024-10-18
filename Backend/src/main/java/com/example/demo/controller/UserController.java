@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.dto.UserDTO;
-import com.example.demo.model.UserImpl.Patient;
+import com.example.demo.model.userimpl.Patient;
 import com.example.demo.service.UserService;
 import com.example.demo.utility.RabbitMQProducer;
 
