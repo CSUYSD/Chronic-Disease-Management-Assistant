@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.example.demo.model.User;
+import com.example.demo.model.dto.PatientDTO;
+import com.example.demo.model.userimpl.Companion;
 import com.example.demo.service.CompanionService;
 import com.example.demo.service.PatientService;
 import com.example.demo.utility.jwt.JwtUtil;
@@ -130,11 +132,22 @@ public class UserController {
         return message;
     }
 
-//    @GetMapping("/companion/patientInfo")
-//    public ResponseEntity<String> getPatientInfo(@RequestHeader("Authorization") String token){
-//        Long companionId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
-//        Patient patient = companionService.GetPatientInfo(companionId);
-//    }
+    @GetMapping("/companion/patientInfo")
+    public ResponseEntity<PatientDTO> getPatientInfo(@RequestHeader("Authorization") String token) {
+        try {
+            PatientDTO patientDTO = companionService.getPatientDTOForCompanion(token);
+
+            if (patientDTO == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+
+            return ResponseEntity.ok(patientDTO);
+
+        } catch (Exception e) {
+            logger.error("Error getting patient info for companion", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 
     @GetMapping("/randomString/{id}")
     public ResponseEntity<String> getRandomString(@PathVariable Long id) {

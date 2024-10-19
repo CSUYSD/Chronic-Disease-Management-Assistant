@@ -1,20 +1,23 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { RootState } from '@/store'
 
+interface ProfileData {
+    username: string
+    email: string
+    role: 'companion' | 'patient'
+    avatar: string | null
+    dob: string | null
+    phone: string | null
+}
+
 interface ProfileState {
-    profile: {
-        username: string
-        email: string | null
-        role: 'companion' | 'patient'
-        avatar: string | null
-        dob: string | null
-    } | null
+    data: ProfileData | null
     isLoading: boolean
     error: string | null
 }
 
 const initialState: ProfileState = {
-    profile: null,
+    data: null,
     isLoading: true,
     error: null
 }
@@ -23,9 +26,9 @@ export const profileSlice = createSlice({
     name: 'profile',
     initialState,
     reducers: {
-        setProfile: (state, action: PayloadAction<ProfileState['profile']>) => {
+        setProfile: (state, action: PayloadAction<ProfileData>) => {
             console.log('Setting profile in Redux:', action.payload)
-            state.profile = action.payload
+            state.data = action.payload
             state.isLoading = false
             state.error = null
         },
@@ -36,13 +39,13 @@ export const profileSlice = createSlice({
             state.error = action.payload
             state.isLoading = false
         },
-        updateProfile: (state, action: PayloadAction<Partial<ProfileState['profile']>>) => {
-            if (state.profile) {
-                state.profile = { ...state.profile, ...action.payload }
+        updateProfile: (state, action: PayloadAction<Partial<ProfileData>>) => {
+            if (state.data) {
+                state.data = { ...state.data, ...action.payload }
             }
         },
         clearProfile: (state) => {
-            state.profile = null
+            state.data = null
             state.isLoading = false
             state.error = null
         }
@@ -51,7 +54,7 @@ export const profileSlice = createSlice({
 
 export const { setProfile, setLoading, setError, updateProfile, clearProfile } = profileSlice.actions
 
-export const selectProfile = (state: RootState) => state.profile.profile
+export const selectProfile = (state: RootState) => state.profile.data
 export const selectIsLoading = (state: RootState) => state.profile.isLoading
 export const selectError = (state: RootState) => state.profile.error
 

@@ -140,7 +140,7 @@ public class SecurityService {
         List<Account> accounts = patient.getAccounts();
 
         // 存储账户信息到 Redis
-        List<Long> accountIds = accounts.stream().map(Account::getId).collect(Collectors.toList());
+        List<Long> accountIds = accounts.stream().map(Account::getId).toList();
 
         for (Account account : accounts) {
             String redisAccountKey = "login_user:" + patient.getId() + ":account:" + account.getId();
@@ -161,6 +161,8 @@ public class SecurityService {
                 user.getEmail(),
                 user.getPhone(),
                 user.getAvatar(),
+                user.getDob(),  // 假设 User 类有 getDob() 方法
+                user.getRole().getRoleName(),
                 token
         );
 

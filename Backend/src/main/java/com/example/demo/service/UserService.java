@@ -112,6 +112,7 @@ public class UserService {
 
         RedisUser redisUser = (RedisUser) redisTemplate.opsForValue().get(userRedisKey);
 
+
         // 如果 Redis 中有用户信息，直接返回
         if (redisUser != null) {
             return Optional.of(getUserInfoFromRedis(redisUser, userId));
@@ -128,6 +129,8 @@ public class UserService {
         userDTO.setEmail(redisUser.getEmail());
         userDTO.setPhone(redisUser.getPhone());
         userDTO.setAvatar(redisUser.getAvatar());
+        userDTO.setDob(redisUser.getDob());
+        userDTO.setRole(redisUser.getRole().replaceFirst("ROLE_", "").toLowerCase());
 
         List<String> accountNames = new ArrayList<>();
         String keyPattern = "login_user:" + userId + ":account*";
@@ -149,7 +152,8 @@ public class UserService {
         userDTO.setEmail(user.getEmail());
         userDTO.setPhone(user.getPhone());
         userDTO.setAvatar(user.getAvatar());
-        userDTO.setRole(user.getRole().getRoleName());
+        userDTO.setDob(user.getDob());
+        userDTO.setRole(user.getRole().getRoleName().replaceFirst("ROLE_", "").toLowerCase());
         List<Account> accounts = user.getAccounts();
         for (Account account : accounts) {
             userDTO.getAccountName().add(account.getAccountName());
