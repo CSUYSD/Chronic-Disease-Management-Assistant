@@ -16,9 +16,9 @@ interface ChatWithFileParams {
     conversationId: string;
 }
 
-const MessageAPI = 'ai/message'
+const MessageAPI = 'ai/chat'
 
-const DocumentAPI = 'ai/document'
+const DocumentAPI = 'vector-db'
 
 const AnalyserAPI = 'ai/analyser'
 
@@ -30,7 +30,7 @@ const AnalyserAPI = 'ai/analyser'
 export function FluxMessageWithHistoryAPI(params: FluxMessageParams): Promise<AxiosResponse<string>> {
     console.log("Sending flux message data:", params);
     return request({
-        url: `${MessageAPI}/chat/stream/history`,
+        url: `${MessageAPI}/general`,
         method: 'GET',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
@@ -87,7 +87,7 @@ export function ClearFileByFileName(fileName: string): Promise<AxiosResponse> {
 export function ChatWithFileAPI(params: ChatWithFileParams): Promise<AxiosResponse<string>> {
     console.log("Sending chat with file data:", params);
     return request({
-        url: `${DocumentAPI}/chat/stream/database`,
+        url: `${DocumentAPI}/rag`,
         method: 'GET',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'

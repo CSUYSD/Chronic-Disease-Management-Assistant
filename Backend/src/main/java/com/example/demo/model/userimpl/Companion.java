@@ -6,8 +6,10 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
+import lombok.Data;
 
 @Entity
+@Data
 public class Companion extends User {
     @OneToOne
     @JoinColumn(name = "patient_id")

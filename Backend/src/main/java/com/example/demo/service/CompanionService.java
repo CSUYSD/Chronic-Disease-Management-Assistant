@@ -55,4 +55,14 @@ public class CompanionService {
             return false;
         }
     }
+
+    public Patient GetPatientInfo(Long companionId) {
+        Companion companion = companionDao.findById(companionId).orElse(null);
+        try{
+            Long patientId = companion.getPatient().getId();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
