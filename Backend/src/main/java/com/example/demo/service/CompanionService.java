@@ -1,8 +1,8 @@
 package com.example.demo.service;
 
-import com.example.demo.Dao.CompanionDao;
-import com.example.demo.Dao.PatientDao;
-import com.example.demo.Dao.UserDao;
+import com.example.demo.repository.CompanionDao;
+import com.example.demo.repository.PatientDao;
+import com.example.demo.repository.UserDao;
 import com.example.demo.model.userimpl.Companion;
 import com.example.demo.model.userimpl.Patient;
 import com.example.demo.utility.jwt.JwtUtil;

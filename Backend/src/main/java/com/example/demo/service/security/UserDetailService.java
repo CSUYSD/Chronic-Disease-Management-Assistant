@@ -10,9 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import com.example.demo.Dao.UserDao;
+import com.example.demo.repository.UserDao;
 import com.example.demo.model.security.UserDetail;
-import com.example.demo.model.UserRole;
+import com.example.demo.model.security.UserRole;
 
 import java.util.Collection;
 import java.util.Collections;

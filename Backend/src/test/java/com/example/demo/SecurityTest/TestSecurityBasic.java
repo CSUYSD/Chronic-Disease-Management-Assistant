@@ -5,7 +5,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import com.example.demo.Dao.PatientDao;
+import com.example.demo.repository.PatientDao;
 import com.example.demo.model.userimpl.Patient;
 import com.example.demo.utility.jwt.JwtUtil;
 import static com.google.common.truth.Truth.assertThat;

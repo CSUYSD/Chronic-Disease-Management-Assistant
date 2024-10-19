@@ -1,4 +1,4 @@
-package com.example.demo.controller.AiFunctionController;
+package com.example.demo.controller.ai;
 
 import com.example.demo.service.ai.AiAnalyserService;
 import lombok.AllArgsConstructor;
