@@ -1,6 +1,5 @@
 package com.example.demo.controller.AiFunctionController;
 
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -11,12 +10,10 @@ import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
@@ -33,56 +30,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/ai/document")
+@RequestMapping("/ai/chat")
 @Slf4j
-public class DocumentController {
-    private final OpenAiEmbeddingModel openAiEmbeddingModel;
-    @Autowired
-    VectorStore vectorStore;
-    @Autowired
-    ChromaVectorStore chromaVectorStore;
+public class AiChatController {
+    @Autowired ChromaVectorStore chromaVectorStore;
     private final OpenAiChatModel openAiChatModel;
     private final ChatMemory chatMemory = new InMemoryChatMemory();
 
-    private final List<String> savedDocumentIds = new ArrayList<>();
+
     private String currentConversationId = "";
 
-    public DocumentController(OpenAiEmbeddingModel openAiEmbeddingModel, OpenAiChatModel openAiChatModel) {
-        this.openAiEmbeddingModel = openAiEmbeddingModel;
+    public AiChatController(OpenAiChatModel openAiChatModel) {
         this.openAiChatModel = openAiChatModel;
     }
 
-    @SneakyThrows
-    @PostMapping("etl/read/local")
-    public String readForLocal(@RequestParam String path) {
-        Resource resource = new FileSystemResource(path);
-        TikaDocumentReader reader = new TikaDocumentReader(resource);
-        return reader
-                .read()
-                .get(0)
-                .getContent();
-    }
 
     @SneakyThrows
-    @PostMapping("etl/read/multipart")
-    public void saveVectorDB(@RequestParam MultipartFile file) {
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("Uploaded file is empty");
-        }
-        Resource resource = new InputStreamResource(file.getInputStream());
-        TikaDocumentReader reader = new TikaDocumentReader(resource);
-        List<Document> splitDocuments = new TokenTextSplitter().apply(reader.read());
-        // Save the document ids for other ops
-        for (Document doc : splitDocuments) {
-            savedDocumentIds.add(doc.getId());
-            System.out.printf("Document id: %s\n", doc.getId());
-        }
-        chromaVectorStore.doAdd(splitDocuments);
-    }
-
-    @SneakyThrows
-    @GetMapping(value = "chat/stream/database", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<String>> chatStreamWithDatabase(@RequestParam String prompt, @RequestParam String conversationId) {
+    @GetMapping(value = "/rag", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> chatStreamWithVectorDB(@RequestParam String prompt, @RequestParam String conversationId) {
         // 1. 定义提示词模板，question_answer_context会被替换成向量数据库中查询到的文档。
         String promptWithContext = """
                 Below is the context information:
@@ -95,7 +60,7 @@ public class DocumentController {
         return ChatClient.create(openAiChatModel).prompt()
                 .user(prompt)
                 // 2. QuestionAnswerAdvisor会在运行时替换模板中的占位符`question_answer_context`，替换成向量数据库中查询到的文档。此时的query=用户的提问+替换完的提示词模板;
-                .advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults(), promptWithContext))
+                .advisors(new QuestionAnswerAdvisor(chromaVectorStore, SearchRequest.defaults(), promptWithContext))
                 .advisors(new MessageChatMemoryAdvisor(chatMemory, conversationId, 10))
                 .stream()
                 // 3. query发送给大模型得到答案
@@ -105,21 +70,17 @@ public class DocumentController {
                         .build());
     }
 
-    @GetMapping("etl/clear")
-    public ResponseEntity<String> clearVectorDB() {
-        try {
-            System.out.printf("Deleting %d documents from vector database...\n", savedDocumentIds.size());
-            chromaVectorStore.doDelete(savedDocumentIds);
-            savedDocumentIds.clear();
-            return ResponseEntity.ok("Vector database cleared successfully.");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to clear vector database.");
-        }
-    }
-
-    @PostMapping("embedding")
-    public float[] embedding(@RequestParam String text) {
-        return openAiEmbeddingModel.embed(text);
+    //streaming chat with memory use SSE pipeline.
+    @GetMapping(value = "/general", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> chatStream(@RequestParam String prompt, @RequestParam String sessionId) {
+        MessageChatMemoryAdvisor messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory, sessionId, 10);
+        return ChatClient.create(openAiChatModel).prompt()
+                .user(prompt)
+                .advisors(messageChatMemoryAdvisor)
+                .stream() //流式返回
+                .content().map(chatResponse -> ServerSentEvent.builder(chatResponse)
+                        .event("message")
+                        .build());
     }
 
     @RabbitListener(queues = "health.report.to.chatbot")
