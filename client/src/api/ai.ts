@@ -13,8 +13,14 @@ interface UploadFileFormData extends FormData {
 
 interface ChatWithFileParams {
     prompt: string;
-    sessionId: string;
+    conversationId: string;
 }
+
+const MessageAPI = 'ai/chat'
+
+const DocumentAPI = 'vector-db'
+
+const AnalyserAPI = 'ai/analyser'
 
 /**
  * Flux Message with History API
@@ -24,13 +30,12 @@ interface ChatWithFileParams {
 export function FluxMessageWithHistoryAPI(params: FluxMessageParams): Promise<AxiosResponse<string>> {
     console.log("Sending flux message data:", params);
     return request({
-        url: '/message/chat/stream/history',
+        url: `${MessageAPI}/general`,
         method: 'GET',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        params: params,
-        responseType: 'text'
+        params: params
     });
 }
 
@@ -42,7 +47,7 @@ export function FluxMessageWithHistoryAPI(params: FluxMessageParams): Promise<Ax
 export function UploadFileAPI(formData: UploadFileFormData): Promise<AxiosResponse> {
     console.log("Uploading file data:", formData);
     return request({
-        url: '/document/etl/read/multipart',
+        url: `${DocumentAPI}/etl/read/multipart`,
         method: 'POST',
         headers: {
             'Content-Type': 'multipart/form-data'
@@ -57,9 +62,21 @@ export function UploadFileAPI(formData: UploadFileFormData): Promise<AxiosRespon
  */
 export function ClearFileAPI(): Promise<AxiosResponse> {
     return request({
-        url: '/document/etl/clear',
+        url: `${DocumentAPI}/etl/clear`,
         method: 'GET'
     });
+}
+
+/**
+ * Clear File by FileName API
+ * @returns {Promise<AxiosResponse>} - The API response
+ * @param fileName
+ */
+export function ClearFileByFileName(fileName: string): Promise<AxiosResponse> {
+    return request ({
+        url: `${DocumentAPI}/etl/delete/${fileName}`,
+        method: "DELETE"
+    })
 }
 
 /**
@@ -70,12 +87,24 @@ export function ClearFileAPI(): Promise<AxiosResponse> {
 export function ChatWithFileAPI(params: ChatWithFileParams): Promise<AxiosResponse<string>> {
     console.log("Sending chat with file data:", params);
     return request({
-        url: '/document/chat/stream/database',
+        url: `${MessageAPI}/rag`,
         method: 'GET',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        params: params,
+        params: params
+    });
+}
+
+/**
+ * Chat with File API
+ * @returns {Promise<AxiosResponse<string>>} - The API response
+ */
+export function GenerateReportAPI(): Promise<AxiosResponse<string>> {
+    console.log("generate ai report");
+    return request({
+        url: `${AnalyserAPI}/health-report`,
+        method: 'POST',
         responseType: 'text'
     });
 }

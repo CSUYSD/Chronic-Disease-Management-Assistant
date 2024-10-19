@@ -130,6 +130,12 @@ public class UserController {
         return message;
     }
 
+//    @GetMapping("/companion/patientInfo")
+//    public ResponseEntity<String> getPatientInfo(@RequestHeader("Authorization") String token){
+//        Long companionId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+//        Patient patient = companionService.GetPatientInfo(companionId);
+//    }
+
     @GetMapping("/randomString/{id}")
     public ResponseEntity<String> getRandomString(@PathVariable Long id) {
         try {
@@ -144,7 +150,7 @@ public class UserController {
     }
 
     @PostMapping("/bindCompanion")
-    public ResponseEntity<String> bindCompanion(@RequestHeader("Authorization") String token, @RequestBody Map<String, String> requestBody) {
+    public ResponseEntity<String> bindPatient(@RequestHeader("Authorization") String token, @RequestBody Map<String, String> requestBody) {
 
         Long companionId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
         String randomString = requestBody.get("randomString");

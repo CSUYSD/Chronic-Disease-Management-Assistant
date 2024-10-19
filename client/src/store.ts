@@ -2,12 +2,14 @@ import { configureStore } from '@reduxjs/toolkit'
 import chatReducer from '@/store/chatSlice'
 import fileReducer from '@/store/fileSlice'
 import profileReducer from '@/store/profileSlice'
+import reportReducer from '@/store/reportSlice'
 
 export const store = configureStore({
     reducer: {
         chat: chatReducer,
         file: fileReducer,
         profile: profileReducer,
+        report: reportReducer
     },
 })
 

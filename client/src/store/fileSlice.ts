@@ -9,29 +9,37 @@ interface FileMetadata {
 }
 
 interface FileState {
-    uploadedFile: FileMetadata | null;
+    uploadedFiles: FileMetadata[];
 }
 
 const initialState: FileState = {
-    uploadedFile: null
+    uploadedFiles: []
 }
 
 const fileSlice = createSlice({
     name: 'file',
     initialState,
     reducers: {
-        setUploadedFile: (state, action: PayloadAction<FileMetadata>) => {
-            state.uploadedFile = action.payload;
+        setUploadedFiles: (state, action: PayloadAction<FileMetadata[]>) => {
+            state.uploadedFiles = action.payload;
         },
-        clearUploadedFile: (state) => {
-            state.uploadedFile = null;
+        addUploadedFile: (state, action: PayloadAction<FileMetadata>) => {
+            state.uploadedFiles.push(action.payload);
+        },
+        removeUploadedFile: (state, action: PayloadAction<FileMetadata>) => {
+            state.uploadedFiles = state.uploadedFiles.filter(
+                file => file.name !== action.payload.name || file.size !== action.payload.size
+            );
+        },
+        clearUploadedFiles: (state) => {
+            state.uploadedFiles = [];
         }
     }
 })
 
-export const { setUploadedFile, clearUploadedFile } = fileSlice.actions;
+export const { setUploadedFiles, addUploadedFile, removeUploadedFile, clearUploadedFiles } = fileSlice.actions;
 
 // Encapsulated selector function
-export const useUploadedFile = () => useSelector((state: RootState) => state.file.uploadedFile)
+export const useUploadedFiles = () => useSelector((state: RootState) => state.file.uploadedFiles)
 
 export default fileSlice.reducer;

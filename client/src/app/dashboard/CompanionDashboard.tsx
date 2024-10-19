@@ -1,20 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { UserPlus, Activity, AlertTriangle, Bot, Calendar, ChevronDown, ChevronUp } from "lucide-react"
+import { UserPlus, Activity, AlertTriangle, Bot, Calendar } from "lucide-react"
 import {
     Accordion,
     AccordionContent,
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion"
+import { BindPatientAPI } from  "@/api/companion"
 
 interface Patient {
     id: number
@@ -33,6 +34,10 @@ interface HealthRecord {
 interface AIReport {
     summary: string
     recommendations: string[]
+}
+
+interface BindPatientFormData {
+    randomString: string
 }
 
 export function CompanionDashboard() {

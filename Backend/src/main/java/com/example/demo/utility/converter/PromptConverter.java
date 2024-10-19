@@ -29,7 +29,6 @@ public class PromptConverter {
         return sb.toString();
     }
 
-
     public static String parseLatestHealthRecordToPrompt(HealthRecordDTO record) {
         if (record == null) {
             return "No records found.";
@@ -38,8 +37,8 @@ public class PromptConverter {
     }
 
     private static String parseHealthRecordToString(HealthRecordDTO record) {
-        return String.format("{SBP: %d} {DBP: %d} {Headache: %s} {Back Pain: %s} " +
-                        "{Chest Pain: %s} {Less Urination: %s} {Date: %s} {Description: %s}",
+        return String.format("SBP:%d; DBP:%d; Headache:%s; Back Pain:%s; " +
+                        "Chest Pain:%s; Less Urination:%s; Date:%s; Description:%s",
                 record.getSbp(),
                 record.getDbp(),
                 record.getIsHeadache(),
