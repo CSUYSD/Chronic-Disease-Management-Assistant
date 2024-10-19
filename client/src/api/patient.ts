@@ -5,14 +5,6 @@ interface diseaseFormData {
 }
 
 
-export function createDisease(formData: diseaseFormData) {
-    return request ({
-        url: "/account/create",
-        method: "POST",
-        data: formData
-    })
-}
-
 
 export function switchDisease(id: string) {
     return request ({

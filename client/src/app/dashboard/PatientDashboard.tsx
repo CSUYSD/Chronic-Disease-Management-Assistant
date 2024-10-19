@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Activity, Calendar, Edit, PlusCircle, Search, Trash2, Heart, Droplet, ArrowLeft } from "lucide-react"
-import { createDisease, switchDisease, GetAllDiseases } from "@/api/patient"
+import { switchDisease, GetAllDiseases, getCurrentDisease } from "@/api/patient"
 import { getAllRecordsAPI, createRecordAPI, deleteRecordAPI, updateRecordAPI } from "@/api/record"
 import { toast } from "@/hooks/use-toast"
 
@@ -27,12 +27,13 @@ interface HealthRecord {
 }
 
 interface Disease {
+    id: string
     accountName: string
     icon: React.ReactNode
     available: boolean
 }
 
-export function PatientDashboard() {
+export default function PatientDashboard() {
     const [selectedDisease, setSelectedDisease] = useState<string | null>(null)
     const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([])
     const [newRecord, setNewRecord] = useState<Omit<HealthRecord, 'id' | 'importTime'>>({
@@ -46,54 +47,50 @@ export function PatientDashboard() {
     })
     const [editingRecord, setEditingRecord] = useState<HealthRecord | null>(null)
     const [searchTerm, setSearchTerm] = useState('')
-    const [, setIsDiseaseCreated] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [diseases, setDiseases] = useState<Disease[]>([])
 
-    const diseases: Disease[] = [
-        { accountName: 'Hypertension', icon: <Activity className="h-8 w-8 text-red-500" />, available: true },
-        { accountName: 'Diabetes', icon: <Droplet className="h-8 w-8 text-blue-500" />, available: false },
-        { accountName: 'Heart Disease', icon: <Heart className="h-8 w-8 text-pink-500" />, available: false },
-    ]
+    const fetchDiseases = useCallback(async () => {
+        try {
+            const response = await GetAllDiseases()
+            const fetchedDiseases = response.data.map((disease: any) => ({
+                id: disease.id,
+                accountName: disease.accountName,
+                icon: disease.accountName === 'Hypertension' ? <Activity className="h-8 w-8 text-red-500" /> :
+                    disease.accountName === 'Diabetes' ? <Droplet className="h-8 w-8 text-blue-500" /> :
+                        <Heart className="h-8 w-8 text-pink-500" />,
+                available: disease.accountName === 'Hypertension'
+            }))
+            setDiseases(fetchedDiseases)
+        } catch (error) {
+            console.error('Error fetching diseases:', error)
+            toast({
+                title: "Error",
+                description: "Failed to fetch diseases. Please try again.",
+                variant: "destructive",
+            })
+        }
+    }, [])
+
+    const fetchCurrentDisease = useCallback(async () => {
+        try {
+            const response = await getCurrentDisease()
+            setSelectedDisease(response.data.accountName)
+        } catch (error) {
+            console.error('Error fetching current disease:', error)
+            // No disease selected yet, so we don't show an error toast
+            setSelectedDisease(null)
+        }
+    }, [])
 
     useEffect(() => {
-        const initializeDiseases = async () => {
-            try {
-                const response = await GetAllDiseases()
-                const hypertensionDisease = response.data.find(disease => disease.id === 1 && disease.accountName === 'Hypertension')
-                if (!hypertensionDisease) {
-                    await createDisease({ accountName: 'Hypertension' })
-                    console.log('Hypertension disease created')
-                } else {
-                    console.log('Hypertension disease already exists')
-                }
-                setIsDiseaseCreated(true)
-            } catch (error) {
-                if (error.response && error.response.status === 404) {
-                    try {
-                        await createDisease({ accountName: 'Hypertension' })
-                        console.log('Hypertension disease created after 404 error')
-                        setIsDiseaseCreated(true)
-                    } catch (createError) {
-                        console.error('Error creating disease after 404:', createError)
-                        toast({
-                            title: "Error",
-                            description: "Failed to create disease. Please try again.",
-                            variant: "destructive",
-                        })
-                    }
-                } else {
-                    console.error('Error initializing diseases:', error)
-                    toast({
-                        title: "Error",
-                        description: "Failed to initialize diseases. Please try again.",
-                        variant: "destructive",
-                    })
-                }
-            }
+        const initializeDashboard = async () => {
+            await fetchDiseases()
+            await fetchCurrentDisease()
         }
 
-        initializeDiseases()
-    }, [])
+        initializeDashboard()
+    }, [fetchDiseases, fetchCurrentDisease])
 
     useEffect(() => {
         if (selectedDisease) {
@@ -141,7 +138,7 @@ export function PatientDashboard() {
                 description: "Health record created successfully.",
             })
 
-            // 添加动画效果
+            // Add animation effect for the new record
             const newRecordElement = document.querySelector('.health-record:first-child')
             if (newRecordElement) {
                 newRecordElement.classList.add('animate-pulse')
@@ -168,14 +165,19 @@ export function PatientDashboard() {
     const handleUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         if (editingRecord) {
+            setIsLoading(true)
             try {
                 const response = await updateRecordAPI(editingRecord.id, editingRecord)
+                setHealthRecords(prevRecords =>
+                    prevRecords.map(record =>
+                        record.id === editingRecord.id ? response.data : record
+                    )
+                )
                 setEditingRecord(null)
                 toast({
                     title: "Success",
                     description: "Health record updated successfully.",
                 })
-                fetchHealthRecords() // 立即刷新记录
             } catch (error) {
                 console.error('Error updating health record:', error)
                 toast({
@@ -183,14 +185,17 @@ export function PatientDashboard() {
                     description: "Failed to update health record. Please try again.",
                     variant: "destructive",
                 })
+            } finally {
+                setIsLoading(false)
             }
         }
     }
 
     const handleDelete = async (id: string) => {
+        setIsLoading(true)
         try {
             await deleteRecordAPI(id)
-            setHealthRecords(healthRecords.filter(record => record.id !== id))
+            setHealthRecords(prevRecords => prevRecords.filter(record => record.id !== id))
             toast({
                 title: "Success",
                 description: "Health record deleted successfully.",
@@ -202,29 +207,33 @@ export function PatientDashboard() {
                 description: "Failed to delete health record. Please try again.",
                 variant: "destructive",
             })
+        } finally {
+            setIsLoading(false)
         }
     }
 
-    const handleSelectDisease = (diseaseName: string) => {
-        if (diseaseName === 'Hypertension') {
+    const handleSelectDisease = async (disease: Disease) => {
+        if (disease.available) {
             setIsLoading(true)
-            switchDisease('1')
-                .then(() => {
-                    console.log('Switched to Hypertension')
-                    setSelectedDisease(diseaseName)
-                    return fetchHealthRecords()
+            try {
+                await switchDisease(disease.id)
+                setSelectedDisease(disease.accountName)
+                await fetchHealthRecords()
+            } catch (error) {
+                console.error('Error switching disease:', error)
+                toast({
+                    title: "Error",
+                    description: "Failed to switch disease. Please try again.",
+                    variant: "destructive",
                 })
-                .catch((error) => {
-                    console.error('Error switching disease:', error)
-                    toast({
-                        title: "Error",
-                        description: "Failed to switch disease. Please try again.",
-                        variant: "destructive",
-                    })
-                })
-                .finally(() => {
-                    setIsLoading(false)
-                })
+            } finally {
+                setIsLoading(false)
+            }
+        } else {
+            toast({
+                title: "Information",
+                description: `${disease.accountName} is currently in beta and not available for selection.`,
+            })
         }
     }
 
@@ -236,7 +245,7 @@ export function PatientDashboard() {
         return (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {diseases.map((disease) => (
-                    <Card key={disease.accountName} className={`cursor-pointer transition-all ${disease.available ? 'hover:shadow-lg' : 'opacity-50'}`}>
+                    <Card key={disease.id} className={`cursor-pointer transition-all ${disease.available ? 'hover:shadow-lg' : 'opacity-50'}`}>
                         <CardHeader>
                             <CardTitle className="flex items-center justify-center">
                                 {disease.icon}
@@ -246,10 +255,10 @@ export function PatientDashboard() {
                         <CardContent>
                             <Button
                                 className="w-full"
-                                onClick={() => disease.available && handleSelectDisease(disease.accountName)}
+                                onClick={() => handleSelectDisease(disease)}
                                 disabled={!disease.available}
                             >
-                                {disease.available ? 'Select' : 'Coming Soon'}
+                                {disease.available ? 'Select' : 'Coming Soon (Beta)'}
                             </Button>
                         </CardContent>
                     </Card>
@@ -330,7 +339,92 @@ export function PatientDashboard() {
                                                                 <DialogDescription>Make changes to your health record here.</DialogDescription>
                                                             </DialogHeader>
                                                             <form onSubmit={handleUpdate} className="space-y-4">
-                                                                {/* Edit form fields */}
+                                                                <div className="grid grid-cols-2 gap-4">
+                                                                    <div>
+                                                                        <Label htmlFor="edit-sbp">Systolic BP</Label>
+                                                                        <Input
+                                                                            id="edit-sbp"
+                                                                            type="number"
+                                                                            value={editingRecord?.sbp}
+                                                                            onChange={(e) => setEditingRecord(prev => prev ? {...prev, sbp: parseInt(e.target.value)} : null)}
+                                                                            required
+                                                                            className="mt-1"
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <Label htmlFor="edit-dbp">Diastolic BP</Label>
+                                                                        <Input
+                                                                            id="edit-dbp"
+                                                                            type="number"
+                                                                            value={editingRecord?.dbp}
+                                                                            onChange={(e) => setEditingRecord(prev => prev ? {...prev, dbp: parseInt(e.target.value)} : null)}
+                                                                            required
+                                                                            className="mt-1"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="grid grid-cols-2 gap-4">
+                                                                    <div>
+                                                                        <Label htmlFor="edit-isHeadache">Headache</Label>
+                                                                        <select
+                                                                            id="edit-isHeadache"
+                                                                            value={editingRecord?.isHeadache}
+                                                                            onChange={(e) => setEditingRecord(prev => prev ? {...prev, isHeadache: e.target.value} : null)}
+
+                                                                            className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                                                        >
+                                                                            <option value="YES">Yes</option>
+                                                                            <option value="NO">No</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div>
+                                                                        <Label htmlFor="edit-isBackPain">Back Pain</Label>
+                                                                        <select
+                                                                            id="edit-isBackPain"
+                                                                            value={editingRecord?.isBackPain}
+                                                                            onChange={(e) => setEditingRecord(prev => prev ? {...prev, isBackPain: e.target.value} : null)}
+                                                                            className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                                                        >
+                                                                            <option value="YES">Yes</option>
+                                                                            <option value="NO">No</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="grid grid-cols-2 gap-4">
+                                                                    <div>
+                                                                        <Label htmlFor="edit-isChestPain">Chest Pain</Label>
+                                                                        <select
+                                                                            id="edit-isChestPain"
+                                                                            value={editingRecord?.isChestPain}
+                                                                            onChange={(e) => setEditingRecord(prev => prev ? {...prev, isChestPain: e.target.value} : null)}
+                                                                            className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                                                        >
+                                                                            <option value="YES">Yes</option>
+                                                                            <option value="NO">No</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div>
+                                                                        <Label htmlFor="edit-isLessUrination">Less Urination</Label>
+                                                                        <select
+                                                                            id="edit-isLessUrination"
+                                                                            value={editingRecord?.isLessUrination}
+                                                                            onChange={(e) => setEditingRecord(prev => prev ? {...prev, isLessUrination: e.target.value} : null)}
+                                                                            className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                                                        >
+                                                                            <option value="YES">Yes</option>
+                                                                            <option value="NO">No</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <Label htmlFor="edit-description">Description</Label>
+                                                                    <Textarea
+                                                                        id="edit-description"
+                                                                        value={editingRecord?.description}
+                                                                        onChange={(e) => setEditingRecord(prev => prev ? {...prev, description: e.target.value} : null)}
+                                                                        className="mt-1"
+                                                                    />
+                                                                </div>
                                                                 <Button type="submit">Update Record</Button>
                                                             </form>
                                                         </DialogContent>
@@ -452,8 +546,18 @@ export function PatientDashboard() {
                                         />
                                     </div>
                                 </div>
-                                <Button type="submit" className="mt-4 w-full">
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Record
+                                <Button type="submit" className="mt-4 w-full" disabled={isLoading}>
+                                    {isLoading ? (
+                                        <motion.div
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                            className="w-5 h-5 border-t-2 border-white rounded-full"
+                                        />
+                                    ) : (
+                                        <>
+                                            <PlusCircle className="mr-2 h-4 w-4" /> Add Record
+                                        </>
+                                    )}
                                 </Button>
                             </form>
                         </CardContent>

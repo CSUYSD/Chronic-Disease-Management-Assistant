@@ -1,7 +1,7 @@
 package com.example.demo.service;
 
-import com.example.demo.Dao.CompanionDao;
-import com.example.demo.Dao.PatientDao;
+import com.example.demo.repository.CompanionDao;
+import com.example.demo.repository.PatientDao;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.PatientDTO;
 import com.example.demo.model.userimpl.Companion;

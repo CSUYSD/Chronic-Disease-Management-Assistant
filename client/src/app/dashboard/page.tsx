@@ -3,7 +3,7 @@
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
 import { selectProfile, selectIsLoading } from '@/store/profileSlice'
-import { PatientDashboard } from './PatientDashboard'
+import  PatientDashboard  from './PatientDashboard'
 import CompanionDashboard from './CompanionDashboard'
 
 export default function Dashboard() {
