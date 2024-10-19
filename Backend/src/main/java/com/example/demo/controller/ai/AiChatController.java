@@ -1,4 +1,4 @@
-package com.example.demo.controller.AiFunctionController;
+package com.example.demo.controller.ai;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -8,26 +8,13 @@ import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.reader.tika.TikaDocumentReader;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import reactor.core.publisher.Flux;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @RestController
 @RequestMapping("/ai/chat")
@@ -80,7 +67,7 @@ public class AiChatController {
 
     @RabbitListener(queues = "health.report.to.chatbot")
     public void receiveHealthReport(String report) {
-        log.info("Chat bot received health report from AI analyser: {}", report);
+        log.info("Chat bot received health report from AI analyser");
         chatMemory.add(currentConversationId, new SystemMessage(report));
     }
 

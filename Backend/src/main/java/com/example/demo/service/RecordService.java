@@ -13,9 +13,9 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-import com.example.demo.Dao.AccountDao;
-import com.example.demo.Dao.PatientDao;
-import com.example.demo.Dao.RecordDao;
+import com.example.demo.repository.AccountDao;
+import com.example.demo.repository.PatientDao;
+import com.example.demo.repository.RecordDao;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.HealthRecordDTO;
 import com.example.demo.model.HealthRecord;

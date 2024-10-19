@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.example.demo.Dao.CompanionDao;
+import com.example.demo.repository.CompanionDao;
 import com.example.demo.model.User;
 import com.example.demo.model.userimpl.Companion;
 import org.slf4j.Logger;
@@ -22,18 +22,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.demo.Dao.PatientDao;
-import com.example.demo.Dao.UserRoleDao;
+import com.example.demo.repository.PatientDao;
+import com.example.demo.repository.UserRoleDao;
 import com.example.demo.exception.PasswordNotCorrectException;
 import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.UserDTO;
 import com.example.demo.model.RedisAccount;
-import com.example.demo.model.Redis.RedisUser;
+import com.example.demo.model.redis.RedisUser;
 import com.example.demo.model.security.UserDetail;
 import com.example.demo.model.userimpl.Patient;
-import com.example.demo.model.UserRole;
+import com.example.demo.model.security.UserRole;
 import com.example.demo.utility.jwt.JwtUtil;
 import com.example.demo.model.security.LoginVo;
 

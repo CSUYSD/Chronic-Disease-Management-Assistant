@@ -14,13 +14,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.demo.Dao.PatientDao;
-import com.example.demo.Dao.UserDao;
+import com.example.demo.repository.PatientDao;
+import com.example.demo.repository.UserDao;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.UserDTO;
 import com.example.demo.model.RedisAccount;
-import com.example.demo.model.Redis.RedisUser;
+import com.example.demo.model.redis.RedisUser;
 import com.example.demo.model.User;
 import com.example.demo.model.userimpl.Patient;
 import com.example.demo.utility.jwt.JwtUtil;

@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.Dao.PatientDao;
+import com.example.demo.repository.PatientDao;
 import com.example.demo.exception.AccountAlreadyExistException;
 import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.Account;
@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.example.demo.Dao.AccountDao;
+import com.example.demo.repository.AccountDao;
 
 import java.util.List;
 import java.util.Set;

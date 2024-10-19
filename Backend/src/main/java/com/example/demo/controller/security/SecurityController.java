@@ -1,4 +1,4 @@
-package com.example.demo.controller.Security;
+package com.example.demo.controller.security;
 
 import java.util.Map;
 
