@@ -79,7 +79,7 @@ public class AiAnalyserService {
         {question_answer_context}
         ---------------------
         Response restriction:
-        1. Your response MUST follow the given context and historical information.
+        1. Your response MUST follow the given context and historical information but do not repeat the given information.
         2. Your response should well formated and limited in 500 words.
         """;
         Long userId = getCurrentUserInfo.getCurrentUserId(token);

@@ -87,7 +87,7 @@ export function ClearFileByFileName(fileName: string): Promise<AxiosResponse> {
 export function ChatWithFileAPI(params: ChatWithFileParams): Promise<AxiosResponse<string>> {
     console.log("Sending chat with file data:", params);
     return request({
-        url: `${DocumentAPI}/rag`,
+        url: `${MessageAPI}/rag`,
         method: 'GET',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
