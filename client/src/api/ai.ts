@@ -108,3 +108,15 @@ export function GenerateReportAPI(): Promise<AxiosResponse<string>> {
         responseType: 'text'
     });
 }
+
+/**
+ * Chat with File API
+ * @returns {Promise<AxiosResponse<string>>} - The API response
+ */
+export function GetReportAPI(): Promise<AxiosResponse<string>> {
+    console.log("generate ai report");
+    return request({
+        url: "/health-report",
+        method: 'GET'
+    });
+}

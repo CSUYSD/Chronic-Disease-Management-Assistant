@@ -1,7 +1,7 @@
 import { request } from "@/utils"
 
 interface diseaseFormData {
-    name: string
+    accountName: string
 }
 
 
@@ -21,6 +21,13 @@ export function switchDisease(id: string) {
         params: {
             accountId: id
         }
+    })
+}
+
+export function getCurrentDisease() {
+    return request ({
+        url: "/account/current",
+        method: "GET",
     })
 }
 

@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Activity, Calendar, Edit, PlusCircle, Search, Trash2, Heart, Droplet, ArrowLeft } from "lucide-react"
-import { createDisease, switchDisease} from "@/api/patient"
+import { createDisease, switchDisease, GetAllDiseases } from "@/api/patient"
 import { getAllRecordsAPI, createRecordAPI, deleteRecordAPI, updateRecordAPI } from "@/api/record"
 import { toast } from "@/hooks/use-toast"
 
@@ -27,7 +27,7 @@ interface HealthRecord {
 }
 
 interface Disease {
-    name: string
+    accountName: string
     icon: React.ReactNode
     available: boolean
 }
@@ -46,32 +46,54 @@ export function PatientDashboard() {
     })
     const [editingRecord, setEditingRecord] = useState<HealthRecord | null>(null)
     const [searchTerm, setSearchTerm] = useState('')
-    const [isDiseaseCreated, setIsDiseaseCreated] = useState(false)
+    const [, setIsDiseaseCreated] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
 
     const diseases: Disease[] = [
-        { name: 'Hypertension', icon: <Activity className="h-8 w-8 text-red-500" />, available: true },
-        { name: 'Diabetes', icon: <Droplet className="h-8 w-8 text-blue-500" />, available: false },
-        { name: 'Heart Disease', icon: <Heart className="h-8 w-8 text-pink-500" />, available: false },
+        { accountName: 'Hypertension', icon: <Activity className="h-8 w-8 text-red-500" />, available: true },
+        { accountName: 'Diabetes', icon: <Droplet className="h-8 w-8 text-blue-500" />, available: false },
+        { accountName: 'Heart Disease', icon: <Heart className="h-8 w-8 text-pink-500" />, available: false },
     ]
 
     useEffect(() => {
-        if (!isDiseaseCreated) {
-            createDisease({ name: 'Hypertension' })
-                .then(() => {
+        const initializeDiseases = async () => {
+            try {
+                const response = await GetAllDiseases()
+                const hypertensionDisease = response.data.find(disease => disease.id === 1 && disease.accountName === 'Hypertension')
+                if (!hypertensionDisease) {
+                    await createDisease({ accountName: 'Hypertension' })
                     console.log('Hypertension disease created')
-                    setIsDiseaseCreated(true)
-                })
-                .catch((error) => {
-                    console.error('Error creating disease:', error)
+                } else {
+                    console.log('Hypertension disease already exists')
+                }
+                setIsDiseaseCreated(true)
+            } catch (error) {
+                if (error.response && error.response.status === 404) {
+                    try {
+                        await createDisease({ accountName: 'Hypertension' })
+                        console.log('Hypertension disease created after 404 error')
+                        setIsDiseaseCreated(true)
+                    } catch (createError) {
+                        console.error('Error creating disease after 404:', createError)
+                        toast({
+                            title: "Error",
+                            description: "Failed to create disease. Please try again.",
+                            variant: "destructive",
+                        })
+                    }
+                } else {
+                    console.error('Error initializing diseases:', error)
                     toast({
                         title: "Error",
-                        description: "Failed to create disease. Please try again.",
+                        description: "Failed to initialize diseases. Please try again.",
                         variant: "destructive",
                     })
-                })
+                }
+            }
         }
-    }, [isDiseaseCreated])
+
+        initializeDiseases()
+    }, [])
 
     useEffect(() => {
         if (selectedDisease) {
@@ -83,12 +105,7 @@ export function PatientDashboard() {
         setIsLoading(true)
         try {
             const response = await getAllRecordsAPI()
-            if (Array.isArray(response.data)) {
-                setHealthRecords(response.data)
-            } else {
-                console.error('Unexpected response format:', response.data)
-                setHealthRecords([])
-            }
+            setHealthRecords(response.data)
         } catch (error) {
             console.error('Error fetching health records:', error)
             toast({
@@ -96,10 +113,9 @@ export function PatientDashboard() {
                 description: "Failed to fetch health records. Please try again.",
                 variant: "destructive",
             })
-            setHealthRecords([]) // 确保在错误情况下也设置一个空数组
         } finally {
-        setIsLoading(false)
-    }
+            setIsLoading(false)
+        }
     }
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -124,7 +140,15 @@ export function PatientDashboard() {
                 title: "Success",
                 description: "Health record created successfully.",
             })
-            fetchHealthRecords() // 重新获取记录以确保数据是最新的
+
+            // 添加动画效果
+            const newRecordElement = document.querySelector('.health-record:first-child')
+            if (newRecordElement) {
+                newRecordElement.classList.add('animate-pulse')
+                setTimeout(() => {
+                    newRecordElement.classList.remove('animate-pulse')
+                }, 2000)
+            }
         } catch (error) {
             console.error('Error creating health record:', error)
             toast({
@@ -188,7 +212,7 @@ export function PatientDashboard() {
                 .then(() => {
                     console.log('Switched to Hypertension')
                     setSelectedDisease(diseaseName)
-                    return fetchHealthRecords() // 返回 Promise
+                    return fetchHealthRecords()
                 })
                 .catch((error) => {
                     console.error('Error switching disease:', error)
@@ -212,17 +236,17 @@ export function PatientDashboard() {
         return (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {diseases.map((disease) => (
-                    <Card key={disease.name} className={`cursor-pointer transition-all ${disease.available ? 'hover:shadow-lg' : 'opacity-50'}`}>
+                    <Card key={disease.accountName} className={`cursor-pointer transition-all ${disease.available ? 'hover:shadow-lg' : 'opacity-50'}`}>
                         <CardHeader>
                             <CardTitle className="flex items-center justify-center">
                                 {disease.icon}
-                                <span className="ml-2">{disease.name}</span>
+                                <span className="ml-2">{disease.accountName}</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <Button
                                 className="w-full"
-                                onClick={() => disease.available && handleSelectDisease(disease.name)}
+                                onClick={() => disease.available && handleSelectDisease(disease.accountName)}
                                 disabled={!disease.available}
                             >
                                 {disease.available ? 'Select' : 'Coming Soon'}
@@ -279,135 +303,54 @@ export function PatientDashboard() {
                                 </div>
                             ) : (
                                 <AnimatePresence>
-                                {filteredRecords.map((record) => (
-                                    <motion.div
-                                        key={record.id}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -20 }}
-                                        transition={{ duration: 0.3 }}
-                                        className="mb-4 p-4 border rounded-lg hover:shadow-md transition-all bg-white health-record"
-                                    >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center">
-                                                <Calendar className="mr-2 h-4 w-4 text-gray-500" />
-                                                <p className="font-semibold text-gray-700">{new Date(record.importTime).toLocaleString()}</p>
+                                    {filteredRecords.map((record) => (
+                                        <motion.div
+                                            key={record.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -20 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="mb-4 p-4 border rounded-lg hover:shadow-md transition-all bg-white health-record"
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center">
+                                                    <Calendar className="mr-2 h-4 w-4 text-gray-500" />
+                                                    <p className="font-semibold text-gray-700">{new Date(record.importTime).toLocaleString()}</p>
+                                                </div>
+                                                <div className="flex space-x-2">
+                                                    <Dialog>
+                                                        <DialogTrigger asChild>
+                                                            <Button variant="outline" size="sm" onClick={() => handleEdit(record)}>
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                        </DialogTrigger>
+                                                        <DialogContent>
+                                                            <DialogHeader>
+                                                                <DialogTitle>Edit Health Record</DialogTitle>
+                                                                <DialogDescription>Make changes to your health record here.</DialogDescription>
+                                                            </DialogHeader>
+                                                            <form onSubmit={handleUpdate} className="space-y-4">
+                                                                {/* Edit form fields */}
+                                                                <Button type="submit">Update Record</Button>
+                                                            </form>
+                                                        </DialogContent>
+                                                    </Dialog>
+                                                    <Button variant="outline" size="sm" onClick={() => handleDelete(record.id)}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             </div>
-                                            <div className="flex space-x-2">
-                                                <Dialog>
-                                                    <DialogTrigger asChild>
-                                                        <Button variant="outline" size="sm" onClick={() => handleEdit(record)}>
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent>
-                                                        <DialogHeader>
-                                                            <DialogTitle>Edit Health Record</DialogTitle>
-                                                            <DialogDescription>Make changes to your health record here.</DialogDescription>
-                                                        </DialogHeader>
-                                                        <form onSubmit={handleUpdate} className="space-y-4">
-                                                            <div className="grid grid-cols-2 gap-4">
-                                                                <div>
-                                                                    <Label htmlFor="edit-sbp">Systolic BP</Label>
-                                                                    <Input
-                                                                        id="edit-sbp"
-                                                                        type="number"
-                                                                        value={editingRecord?.sbp || 0}
-                                                                        onChange={(e) => setEditingRecord(prev => prev ? {...prev, sbp: parseInt(e.target.value)} : null)}
-                                                                        required
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <Label htmlFor="edit-dbp">Diastolic BP</Label>
-                                                                    <Input
-                                                                        id="edit-dbp"
-                                                                        type="number"
-                                                                        value={editingRecord?.dbp || 0}
-                                                                        onChange={(e) => setEditingRecord(prev => prev ? {...prev, dbp: parseInt(e.target.value)} : null)}
-                                                                        required
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div className="grid grid-cols-2 gap-4">
-                                                                <div>
-                                                                    <Label htmlFor="edit-headache">Headache</Label>
-                                                                    <select
-                                                                        id="edit-headache"
-                                                                        value={editingRecord?.isHeadache || 'NO'}
-                                                                        onChange={(e) => setEditingRecord(prev => prev ? {...prev, isHeadache: e.target.value} : null)}
-                                                                        className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                                                    >
-                                                                        <option value="YES">Yes</option>
-                                                                        <option value="NO">No</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div>
-                                                                    <Label htmlFor="edit-backpain">Back Pain</Label>
-                                                                    <select
-                                                                        id="edit-backpain"
-                                                                        value={editingRecord?.isBackPain || 'NO'}
-                                                                        onChange={(e) => setEditingRecord(prev => prev ? {...prev, isBackPain: e.target.value} : null)}
-                                                                        className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                                                    >
-                                                                        <option value="YES">Yes</option>
-                                                                        <option value="NO">No</option>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                            <div className="grid grid-cols-2 gap-4">
-                                                                <div>
-                                                                    <Label htmlFor="edit-chestpain">Chest Pain</Label>
-                                                                    <select
-                                                                        id="edit-chestpain"
-                                                                        value={editingRecord?.isChestPain || 'NO'}
-                                                                        onChange={(e) => setEditingRecord(prev => prev ? {...prev, isChestPain: e.target.value} : null)}
-                                                                        className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                                                    >
-                                                                        <option  value="YES">Yes</option>
-                                                                        <option value="NO">No</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div>
-                                                                    <Label htmlFor="edit-lessurination">Less Urination</Label>
-                                                                    <select
-                                                                        id="edit-lessurination"
-                                                                        value={editingRecord?.isLessUrination || 'NO'}
-                                                                        onChange={(e) => setEditingRecord(prev => prev ? {...prev, isLessUrination: e.target.value} : null)}
-                                                                        className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                                                    >
-                                                                        <option value="YES">Yes</option>
-                                                                        <option value="NO">No</option>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <Label htmlFor="edit-description">Description</Label>
-                                                                <Textarea
-                                                                    id="edit-description"
-                                                                    value={editingRecord?.description || ''}
-                                                                    onChange={(e) => setEditingRecord(prev => prev ? {...prev, description: e.target.value} : null)}
-                                                                />
-                                                            </div>
-                                                            <Button type="submit">Update Record</Button>
-                                                        </form>
-                                                    </DialogContent>
-                                                </Dialog>
-                                                <Button variant="outline" size="sm" onClick={() => handleDelete(record.id)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                            <div className="grid grid-cols-2 gap-2 mb-2">
+                                                <p className="text-gray-600"><span className="font-medium">Blood Pressure:</span> {record.sbp}/{record.dbp} mmHg</p>
+                                                <p className="text-gray-600"><span className="font-medium">Headache:</span> {record.isHeadache}</p>
+                                                <p className="text-gray-600"><span className="font-medium">Back Pain:</span> {record.isBackPain}</p>
+                                                <p className="text-gray-600"><span className="font-medium">Chest Pain:</span> {record.isChestPain}</p>
+                                                <p className="text-gray-600"><span className="font-medium">Less Urination:</span> {record.isLessUrination}</p>
                                             </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2 mb-2">
-                                            <p className="text-gray-600"><span className="font-medium">Blood Pressure:</span> {record.sbp}/{record.dbp} mmHg</p>
-                                            <p className="text-gray-600"><span className="font-medium">Headache:</span> {record.isHeadache}</p>
-                                            <p className="text-gray-600"><span className="font-medium">Back Pain:</span> {record.isBackPain}</p>
-                                            <p className="text-gray-600"><span className="font-medium">Chest Pain:</span> {record.isChestPain}</p>
-                                            <p className="text-gray-600"><span className="font-medium">Less Urination:</span> {record.isLessUrination}</p>
-                                        </div>
-                                        <p className="text-gray-600"><span className="font-medium">Description:</span> {record.description}</p>
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
+                                            <p className="text-gray-600"><span className="font-medium">Description:</span> {record.description}</p>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
                             )}
                         </CardContent>
                     </Card>
