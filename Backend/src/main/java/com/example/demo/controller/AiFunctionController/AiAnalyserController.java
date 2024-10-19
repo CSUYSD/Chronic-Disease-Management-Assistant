@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiAnalyserController {
     @Autowired public final AiAnalyserService aiAnalyserService;
 
-    @PostMapping("health-report")
+    @PostMapping("/health-report")
     public ResponseEntity<String> generateOverAllHealthReport(@RequestHeader("Authorization") String token) {
         log.info("Generating overall health report");
         return ResponseEntity.ok(aiAnalyserService.generateOverAllHealthReport(token));
