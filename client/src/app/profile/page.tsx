@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/hooks/use-toast"
 import { User, Mail, Phone, Calendar, Heart, Camera, Key } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { getProfileAPI, updateProfileAPI } from "@/api/user"
+import { getProfileAPI, updateUserAPI } from "@/api/user"
+import { GetRandomString } from "@/api/patient"
 import { setProfile, selectProfile, selectIsLoading, setError, updateProfile } from '@/store/profileSlice'
 import { AppDispatch } from '@/store'
 
@@ -20,8 +21,16 @@ export default function ProfilePage() {
     const profile = useSelector(selectProfile)
     const isLoading = useSelector(selectIsLoading)
     const [isEditing, setIsEditing] = useState(false)
-    const [editedProfile, setEditedProfile] = useState(profile)
     const [initialFetchDone, setInitialFetchDone] = useState(false)
+    const [bindingCode, setBindingCode] = useState<string | null>(null)
+    const [editedProfile, setEditedProfile] = useState(profile || {
+        username: '',
+        email: '',
+        phone: '',
+        dob: '',
+        bio: '',
+        // 添加其他必要的字段，确保它们都有默认值
+    })
 
     const fetchProfile = useCallback(async () => {
         try {
@@ -46,8 +55,30 @@ export default function ProfilePage() {
     }, [fetchProfile, initialFetchDone])
 
     useEffect(() => {
-        setEditedProfile(profile)
+        if (profile) {
+            setEditedProfile(profile)
+        }
     }, [profile])
+
+    useEffect(() => {
+        const fetchBindingCode = async () => {
+            if (profile?.role === 'patient') {
+                try {
+                    const response = await GetRandomString()
+                    setBindingCode(response.data)
+                } catch (error) {
+                    console.error('Failed to fetch binding code:', error)
+                    toast({
+                        title: "Error",
+                        description: "Failed to fetch binding code. Please try again later.",
+                        variant: "destructive",
+                    })
+                }
+            }
+        }
+
+        fetchBindingCode()
+    }, [profile?.role])
 
     if (isLoading) {
         return (
@@ -91,7 +122,7 @@ export default function ProfilePage() {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         try {
-            const response = await updateProfileAPI(editedProfile)
+            const response = await updateUserAPI(editedProfile)
             dispatch(updateProfile(response.data))
             setIsEditing(false)
             toast({
@@ -271,6 +302,19 @@ export default function ProfilePage() {
                                         </p>
                                     </motion.div>
                                 </motion.div>
+                                {profile.role === 'patient' && bindingCode && (
+                                    <motion.div
+                                        className="pt-4"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.5, delay: 1 }}
+                                    >
+                                        <div className="flex items-center text-lg">
+                                            <Key className="mr-2 h-5 w-5 text-gray-500" />
+                                            <span>Binding Code: {bindingCode}</span>
+                                        </div>
+                                    </motion.div>
+                                )}
                             </CardContent>
                         </Card>
                     </motion.div>

@@ -8,13 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { UserPlus, Activity, AlertTriangle, Bot, Calendar, Mail, Phone, Heart, Droplet, Lungs, Kidney } from "lucide-react"
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "@/components/ui/accordion"
+import { UserPlus, Activity, Bot, Calendar, Mail, Phone, Heart, Droplet, Stethoscope, Droplets, ChevronDown, ChevronUp } from "lucide-react"
 import { BindPatientAPI, GetPatientInfo } from "@/api/companion"
 import { toast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -41,14 +35,30 @@ interface PatientDTO {
     healthRecords: HealthRecord[]
 }
 
-interface AIReport {
-    summary: string
-    recommendations: string[]
+interface CollapsibleProps {
+    title: React.ReactNode
+    children: React.ReactNode
 }
 
-export function CompanionDashboard() {
+const Collapsible: React.FC<CollapsibleProps> = ({ title, children }) => {
+    const [isOpen, setIsOpen] = useState(false)
+
+    return (
+        <div className="border rounded-md mb-2">
+            <button
+                className="flex justify-between items-center w-full p-4 text-left"
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                {title}
+                {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            {isOpen && <div className="p-4 pt-0">{children}</div>}
+        </div>
+    )
+}
+
+export default function CompanionDashboard() {
     const [patient, setPatient] = useState<PatientDTO | null>(null)
-    const [aiReport, setAIReport] = useState<AIReport | null>(null)
     const [bindingCode, setBindingCode] = useState('')
     const [loading, setLoading] = useState(true)
 
@@ -61,12 +71,9 @@ export function CompanionDashboard() {
             const response = await GetPatientInfo()
             if (response.status === 200) {
                 setPatient(response.data)
-                // Assuming the API also returns AI report
-                setAIReport(response.data.aiReport)
             }
         } catch (error: any) {
             console.error('Failed to fetch patient info:', error)
-            // If 404, the patient is not bound yet, so we'll show the binding form
             if (error.response && error.response.status === 404) {
                 setPatient(null)
             } else {
@@ -91,7 +98,6 @@ export function CompanionDashboard() {
                     title: "Success",
                     description: "Patient bound successfully.",
                 })
-                // Fetch patient info again after successful binding
                 await fetchPatientInfo()
             }
         } catch (error: any) {
@@ -107,6 +113,8 @@ export function CompanionDashboard() {
     }
 
     const groupHealthRecordsByDate = (records: HealthRecord[]) => {
+        if (!records || records.length === 0) return []
+
         const grouped = records.reduce((acc, record) => {
             const date = new Date(record.importTime).toLocaleDateString()
             if (!acc[date]) {
@@ -238,32 +246,34 @@ export function CompanionDashboard() {
                         </CardHeader>
                         <CardContent>
                             <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                                <Accordion type="single" collapsible className="w-full">
-                                    {groupedHealthRecords.map(([date, records]) => (
-                                        <AccordionItem value={`date-${date}`} key={date}>
-                                            <AccordionTrigger>
+                                {groupedHealthRecords.length > 0 ? (
+                                    groupedHealthRecords.map(([date, records]) => (
+                                        <Collapsible
+                                            key={date}
+                                            title={
                                                 <div className="flex items-center">
                                                     <Calendar className="mr-2 h-4 w-4" />
                                                     <span>{date}</span>
                                                 </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent>
-                                                {records.map((record, index) => (
-                                                    <div key={index} className="mb-4 p-4 bg-gray-100 rounded-lg">
-                                                        <p className="font-medium mb-2">Time: {new Date(record.importTime).toLocaleTimeString()}</p>
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            <p><Heart className="inline mr-1" /> Blood Pressure: {record.sbp}/{record.dbp} mmHg</p>
-                                                            <p><Droplet className="inline mr-1" /> Headache: {record.isHeadache}</p>
-                                                            <p><Lungs className="inline mr-1" /> Chest Pain: {record.isChestPain}</p>
-                                                            <p><Kidney className="inline mr-1" /> Less Urination: {record.isLessUrination}</p>
-                                                        </div>
-                                                        <p className="mt-2"><span className="font-medium">Description:</span> {record.description}</p>
+                                            }
+                                        >
+                                            {records.map((record, index) => (
+                                                <div key={index} className="mb-4 p-4 bg-gray-100 rounded-lg">
+                                                    <p className="font-medium mb-2">Time: {new Date(record.importTime).toLocaleTimeString()}</p>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <p><Heart className="inline mr-1" /> Blood Pressure: {record.sbp}/{record.dbp} mmHg</p>
+                                                        <p><Droplet className="inline mr-1" /> Headache: {record.isHeadache}</p>
+                                                        <p><Stethoscope className="inline mr-1" /> Chest Pain: {record.isChestPain}</p>
+                                                        <p><Droplets className="inline mr-1" /> Less Urination: {record.isLessUrination}</p>
                                                     </div>
-                                                ))}
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    ))}
-                                </Accordion>
+                                                    <p className="mt-2"><span className="font-medium">Description:</span> {record.description}</p>
+                                                </div>
+                                            ))}
+                                        </Collapsible>
+                                    ))
+                                ) : (
+                                    <p>No health records available.</p>
+                                )}
                             </ScrollArea>
                         </CardContent>
                     </Card>
@@ -277,29 +287,7 @@ export function CompanionDashboard() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {aiReport && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5 }}
-                                >
-                                    <p className="font-medium mb-2">Summary:</p>
-                                    <p className="mb-4">{aiReport.summary}</p>
-                                    <p className="font-medium mb-2">Recommendations:</p>
-                                    <ul className="list-disc pl-5 space-y-2">
-                                        {aiReport.recommendations.map((rec, index) => (
-                                            <motion.li
-                                                key={index}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ duration: 0.5, delay: index * 0.1 }}
-                                            >
-                                                {rec}
-                                            </motion.li>
-                                        ))}
-                                    </ul>
-                                </motion.div>
-                            )}
+                            <p>AI health report functionality is not implemented yet.</p>
                         </CardContent>
                     </Card>
                 </TabsContent>

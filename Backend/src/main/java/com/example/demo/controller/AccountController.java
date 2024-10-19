@@ -2,6 +2,7 @@ package com.example.demo.controller;
 import java.util.List;
 import java.util.logging.Logger;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -23,6 +24,7 @@ import jakarta.validation.Valid;
 @RestController 
 @RequestMapping("/account")
 @Validated
+@Slf4j
 public class AccountController {
     private final JwtUtil jwtUtil;
     private final AccountService accountService;
@@ -37,8 +39,16 @@ public class AccountController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<Account>> getAllAccounts() {
-        return ResponseEntity.ok(accountService.getAllAccounts());
+    public ResponseEntity<List<Account>> getAllAccountsByUserId(@RequestHeader("Authorization") String token) {
+        try{
+            return ResponseEntity.ok(accountService.getAllAccountsByUserId(token));
+        } catch (UserNotFoundException e) {
+            log.info("User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } catch (AccountNotFoundException e) {
+            log.info("Account not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
 
     @PostMapping("/create")
