@@ -86,8 +86,10 @@ export default function AiChatPage() {
     useEffect(() => {
         if (chats.length === 0) {
             createNewChat()
+        } else if (!currentChatId) {
+            dispatch(setCurrentChatId(chats[0].id))
         }
-    }, [chats])
+    }, [chats, currentChatId, dispatch])
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -256,8 +258,11 @@ export default function AiChatPage() {
 
     const deleteChatHandler = (id: string) => {
         dispatch(deleteChat(id))
-        if (currentChatId === id) {
-            dispatch(setCurrentChatId(chats[0]?.id || ''))
+        if (chats.length > 1) {
+            const newCurrentChatId = chats.find(chat => chat.id !== id)?.id || ''
+            dispatch(setCurrentChatId(newCurrentChatId))
+        } else {
+            createNewChat()
         }
     }
 
@@ -320,6 +325,7 @@ export default function AiChatPage() {
             })
         }
     }
+
 
     if (!currentChat) {
         return <div>Loading...</div>

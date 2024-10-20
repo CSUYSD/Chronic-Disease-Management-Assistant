@@ -106,10 +106,10 @@ export function updatePasswordAPI(oldPassword: string, newPassword: string): Pro
  * @param {UpdateUserDetails} userDetails - The user details to update
  * @returns {Promise<AxiosResponse>} - The API response
  */
-export function updateUserAPI(id: string, userDetails: UpdateUserDetails): Promise<AxiosResponse> {
+export function updateUserAPI(userDetails: UpdateUserDetails): Promise<AxiosResponse> {
     console.log("Updating user details:", userDetails);
     return request({
-        url: `/users/update/${id}`,
+        url: "/users/update/",
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json'
