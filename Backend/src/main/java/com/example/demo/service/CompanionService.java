@@ -105,10 +105,10 @@ public class CompanionService {
         dto.setDob(patient.getDob());
         dto.setAvatar(patient.getAvatar());
 
-        // 从Redis获取选定的accountId
-        Long accountId = getCurrentUserInfo.getCurrentAccountId(companionId);
+        /// 设置默认accountId为1
+        Long accountId = 1L;
 
-        if (accountId != null && patient.getAccounts() != null) {
+        if (patient.getAccounts() != null) {
             patient.getAccounts().stream()
                     .filter(account -> account.getId().equals(accountId))
                     .findFirst()

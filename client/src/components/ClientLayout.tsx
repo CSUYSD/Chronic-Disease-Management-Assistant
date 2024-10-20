@@ -4,19 +4,23 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from 'framer-motion'
-import { Home, MessageSquare, Mail, User, LogOut } from 'lucide-react'
+import { Home, MessageSquare, Mail, User, LogOut, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { logoutAPI } from "@/api/user";
+import { logoutAPI } from "@/api/user"
+import { useDispatch } from 'react-redux'
+import { clearAllData } from '@/store/rootReducer'
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
     const showSidebar = !['/login', '/register', '/'].includes(pathname)
-
     const router = useRouter()
+    const dispatch = useDispatch()
 
     const handleLogout = async () => {
         try {
             await logoutAPI()
+            // Clear all Redux data
+            dispatch(clearAllData())
             router.push('/login')
         } catch (error) {
             console.error('Logout failed:', error)
@@ -48,6 +52,12 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                                 <Link href="/ai-chat">
                                     <MessageSquare className="mr-2 h-4 w-4" />
                                     AI Chat
+                                </Link>
+                            </Button>
+                            <Button asChild variant="ghost" className="w-full justify-start">
+                                <Link href="/community">
+                                    <Users className="mr-2 h-4 w-4" />
+                                    Community
                                 </Link>
                             </Button>
                             <Button asChild variant="ghost" className="w-full justify-start">
