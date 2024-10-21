@@ -12,7 +12,7 @@ export const diseaseSlice = createSlice({
     name: 'disease',
     initialState,
     reducers: {
-        setSelectedDisease: (state, action: PayloadAction<string>) => {
+        setSelectedDisease: (state, action: PayloadAction<string | null>) => {
             state.selectedDisease = action.payload
         },
         clearSelectedDisease: (state) => {

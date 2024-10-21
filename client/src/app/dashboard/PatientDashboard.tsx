@@ -253,7 +253,14 @@ export default function PatientDashboard() {
     const handleAdvancedSearch = async () => {
         setIsLoading(true)
         try {
-            const response = await advancedSearchRecordsAPI(advancedSearchParams)
+            const convertedParams = {
+                ...advancedSearchParams,
+                minSbp: advancedSearchParams.minSbp ? Number(advancedSearchParams.minSbp) : undefined,
+                maxSbp: advancedSearchParams.maxSbp ? Number(advancedSearchParams.maxSbp) : undefined,
+                minDbp: advancedSearchParams.minDbp ? Number(advancedSearchParams.minDbp) : undefined,
+                maxDbp: advancedSearchParams.maxDbp ? Number(advancedSearchParams.maxDbp) : undefined,
+            };
+            const response = await advancedSearchRecordsAPI(convertedParams)
             setHealthRecords(response.data)
         } catch (error) {
             console.error('Error performing advanced search:', error)
@@ -273,7 +280,7 @@ export default function PatientDashboard() {
                 <h1 className="text-2xl font-bold">{selectedDisease}</h1>
                 <Button
                     variant="outline"
-                    onClick={() => dispatch(setSelectedDisease(null))}
+                    onClick={() => dispatch(setSelectedDisease(''))}
                 >
                     Change Disease
                 </Button>
@@ -462,8 +469,8 @@ export default function PatientDashboard() {
                                                                         <Input
                                                                             id="edit-sbp"
                                                                             type="number"
-                                                                            value={editingRecord?.sbp}
-                                                                            onChange={(e) => setEditingRecord({ ...editingRecord, sbp: parseInt(e.target.value) })}
+                                                                            value={editingRecord?.sbp || ''}
+                                                                            onChange={(e) => setEditingRecord(prev => prev ? { ...prev, sbp: parseInt(e.target.value) || 0 } : null)}
                                                                             required
                                                                         />
                                                                     </div>
@@ -472,8 +479,8 @@ export default function PatientDashboard() {
                                                                         <Input
                                                                             id="edit-dbp"
                                                                             type="number"
-                                                                            value={editingRecord?.dbp}
-                                                                            onChange={(e) => setEditingRecord({ ...editingRecord, dbp: parseInt(e.target.value) })}
+                                                                            value={editingRecord?.dbp || ''}
+                                                                            onChange={(e) => setEditingRecord(prev => prev ? { ...prev, dbp: parseInt(e.target.value) || 0 } : null)}
                                                                             required
                                                                         />
                                                                     </div>
@@ -483,7 +490,7 @@ export default function PatientDashboard() {
                                                                         <Checkbox
                                                                             id="edit-isHeadache"
                                                                             checked={editingRecord?.isHeadache === 'YES'}
-                                                                            onCheckedChange={(checked) => setEditingRecord({ ...editingRecord, isHeadache: checked ? 'YES' : 'NO' })}
+                                                                            onCheckedChange={(checked) => setEditingRecord(prev => prev ? { ...prev, isHeadache: checked ? 'YES' : 'NO' } : null)}
                                                                         />
                                                                         <Label htmlFor="edit-isHeadache" className="flex items-center">
                                                                             <Brain className="w-4 h-4 mr-2" />
@@ -494,7 +501,7 @@ export default function PatientDashboard() {
                                                                         <Checkbox
                                                                             id="edit-isBackPain"
                                                                             checked={editingRecord?.isBackPain === 'YES'}
-                                                                            onCheckedChange={(checked) => setEditingRecord({ ...editingRecord, isBackPain: checked ? 'YES' : 'NO' })}
+                                                                            onCheckedChange={(checked) => setEditingRecord(prev => prev ? { ...prev, isBackPain: checked ? 'YES' : 'NO' }: null)}
                                                                         />
                                                                         <Label htmlFor="edit-isBackPain" className="flex items-center">
                                                                             <HeartPulse className="w-4 h-4 mr-2" />
@@ -505,7 +512,7 @@ export default function PatientDashboard() {
                                                                         <Checkbox
                                                                             id="edit-isChestPain"
                                                                             checked={editingRecord?.isChestPain === 'YES'}
-                                                                            onCheckedChange={(checked) => setEditingRecord({ ...editingRecord, isChestPain: checked ? 'YES' : 'NO' })}
+                                                                            onCheckedChange={(checked) => setEditingRecord(prev => prev ? { ...prev, isChestPain: checked ? 'YES' : 'NO' }: null)}
                                                                         />
                                                                         <Label htmlFor="edit-isChestPain" className="flex items-center">
                                                                             <Stethoscope className="w-4 h-4 mr-2" />
@@ -516,7 +523,7 @@ export default function PatientDashboard() {
                                                                         <Checkbox
                                                                             id="edit-isLessUrination"
                                                                             checked={editingRecord?.isLessUrination === 'YES'}
-                                                                            onCheckedChange={(checked) => setEditingRecord({ ...editingRecord, isLessUrination: checked ? 'YES' : 'NO' })}
+                                                                            onCheckedChange={(checked) => setEditingRecord(prev => prev ? { ...prev, isLessUrination: checked ? 'YES' : 'NO' }: null)}
                                                                         />
                                                                         <Label htmlFor="edit-isLessUrination" className="flex items-center">
                                                                             <Droplets className="w-4 h-4 mr-2" />
@@ -528,8 +535,8 @@ export default function PatientDashboard() {
                                                                     <Label htmlFor="edit-description">Description</Label>
                                                                     <Textarea
                                                                         id="edit-description"
-                                                                        value={editingRecord?.description}
-                                                                        onChange={(e) => setEditingRecord({ ...editingRecord, description: e.target.value })}
+                                                                        value={editingRecord?.description || ''}
+                                                                        onChange={(e) => setEditingRecord(prev => prev ? { ...prev, description: e.target.value } : null)}
                                                                         className="mt-1"
                                                                     />
                                                                 </div>

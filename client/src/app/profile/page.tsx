@@ -122,7 +122,14 @@ export default function ProfilePage() {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         try {
-            const response = await updateUserAPI(editedProfile)
+            const updatedProfile = {
+                ...editedProfile,
+                email: editedProfile.email || undefined,
+                phone: editedProfile.phone || undefined,
+                dob: editedProfile.dob || undefined,
+                bio: editedProfile.bio || undefined
+            }
+            const response = await updateUserAPI(updatedProfile)
             dispatch(updateProfile(response.data))
             setIsEditing(false)
             toast({

@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,8 +49,9 @@ public class VectorDBController {
     }
 
     @SneakyThrows
-    @PostMapping("etl/read/multipart")
-    public void saveVectorDB(@RequestParam MultipartFile file) {
+@PostMapping("etl/read/multipart")
+public ResponseEntity<String> saveVectorDB(@RequestParam MultipartFile file) {
+    try {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Uploaded file is empty");
         }
@@ -64,10 +66,15 @@ public class VectorDBController {
             documentIds.add(doc.getId());
             System.out.printf("Document id: %s\n", doc.getId());
         }
-        // 保存文件名和对应的文档ID列表
         fileDocumentIdsMap.put(fileName, documentIds);
 
         chromaVectorStore.doAdd(splitDocuments);
+        return ResponseEntity.ok("File uploaded and processed successfully");
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body("Error processing file: " + e.getMessage());
+        }
     }
 
     //根据文件名进行单个文件的删除
