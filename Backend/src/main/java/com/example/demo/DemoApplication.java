@@ -64,16 +64,16 @@ public class DemoApplication {
 	}
 
 	@Bean
-public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-    try {
-        VectorStore store = new ChromaVectorStore(embeddingModel, chromaApi, "health-ai", true);
-        System.out.println("ChromaVectorStore initialized successfully");
-        return store;
-    } catch (Exception e) {
-        System.err.println("init ChromaVectorStore error: " + e.getMessage());
-        e.printStackTrace();
-        throw e;
-    }
-}
+	public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
+		try {
+			VectorStore store = new ChromaVectorStore(embeddingModel, chromaApi, "health-ai", true);
+			System.out.println("ChromaVectorStore initialized successfully");
+			return store;
+		} catch (Exception e) {
+			System.err.println("init ChromaVectorStore error: " + e.getMessage());
+			e.printStackTrace();
+			throw e;
+		}
+	}
 
 }

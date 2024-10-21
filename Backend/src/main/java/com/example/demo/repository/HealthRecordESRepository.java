@@ -8,5 +8,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface HealthRecordESRepository extends ElasticsearchRepository<HealthRecordDocument, String> {
-    Page<HealthRecordDocument> findByDescriptionContaining(String keyword, Pageable pageable);
+    Page<HealthRecordDocument> findByAccountIdAndDescriptionContaining(Long accountId, String keyword, Pageable pageable);
 }

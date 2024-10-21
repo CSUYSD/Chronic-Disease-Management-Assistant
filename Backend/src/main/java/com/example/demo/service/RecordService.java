@@ -82,12 +82,16 @@ public class RecordService {
                 .orElseThrow(() -> new RuntimeException("Health record not found for id: " + id));
         HealthRecordConverter.updateHealthRecordFromDTO(existingRecord, healthRecordDTO);
         recordDao.save(existingRecord);
+//       update health record to elastic search
+        healthRecordService.syncHealthRecord(existingRecord);
     }
 
     public void deleteHealthRecord(Long id) {
         HealthRecord record = recordDao.findById(id)
                 .orElseThrow(() -> new RuntimeException("Health record not found for id: " + id));
         recordDao.delete(record);
+//      delete health record from elastic search
+        healthRecordService.deleteHealthRecord(id);
     }
 
     @Transactional
@@ -97,6 +101,8 @@ public class RecordService {
             throw new RuntimeException("No records found for provided IDs and accountId: " + accountId);
         }
         recordDao.deleteAll(records);
+//      delete health records in batch from elastic search
+        healthRecordService.deleteHealthRecords(recordIds);
     }
 
     public List<HealthRecordDTO> getCertainDaysRecords(Long accountId, Integer duration) {

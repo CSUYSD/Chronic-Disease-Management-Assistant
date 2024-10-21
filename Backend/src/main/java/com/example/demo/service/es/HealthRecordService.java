@@ -3,6 +3,7 @@ package com.example.demo.service.es;
 import com.example.demo.model.HealthRecord;
 import com.example.demo.model.HealthRecordDocument;
 import com.example.demo.repository.HealthRecordESRepository;
+import com.example.demo.utility.GetCurrentUserInfo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -20,10 +21,12 @@ public class HealthRecordService {
 
     private final HealthRecordESRepository healthRecordESRepository;
     private final ElasticsearchOperations elasticsearchOperations;
+    private final GetCurrentUserInfo getCurrentUserInfo;
 
-    public HealthRecordService(HealthRecordESRepository healthRecordESRepository, ElasticsearchOperations elasticsearchOperations) {
+    public HealthRecordService(HealthRecordESRepository healthRecordESRepository, ElasticsearchOperations elasticsearchOperations, GetCurrentUserInfo getCurrentUserInfo) {
         this.healthRecordESRepository = healthRecordESRepository;
         this.elasticsearchOperations = elasticsearchOperations;
+        this.getCurrentUserInfo = getCurrentUserInfo;
     }
 
     public void syncHealthRecord(HealthRecord healthRecord) {
@@ -31,15 +34,31 @@ public class HealthRecordService {
         healthRecordESRepository.save(document);
     }
 
-    public List<HealthRecordDocument> searchHealthRecords(String keyword, int page, int size) {
-        PageRequest pageRequest = PageRequest.of(page, size);
-        return healthRecordESRepository.findByDescriptionContaining(keyword, pageRequest).getContent();
+    public void deleteHealthRecord(Long id) {
+        String recordId = id.toString();
+        healthRecordESRepository.deleteById(recordId);
     }
 
-    public List<HealthRecordDocument> advancedSearch(String description, Integer minSbp, Integer maxSbp,
+    public void deleteHealthRecords(List<Long> ids) {
+        List<String> recordIds = ids.stream().map(Object::toString).collect(Collectors.toList());
+        healthRecordESRepository.deleteAllById(recordIds);
+    }
+
+    public List<HealthRecordDocument> searchHealthRecords(String token, String keyword, int page, int size) {
+        Long userId = getCurrentUserInfo.getCurrentUserId(token);
+        Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
+        PageRequest pageRequest = PageRequest.of(page, size);
+        return healthRecordESRepository.findByAccountIdAndDescriptionContaining(accountId, keyword, pageRequest).getContent();
+    }
+
+    public List<HealthRecordDocument> advancedSearch(String token, String description, Integer minSbp, Integer maxSbp,
                                                      Integer minDbp, Integer maxDbp, String isHeadache,
                                                      String isBackPain, String isChestPain, String isLessUrination) {
-        Criteria criteria = new Criteria();
+
+        Long userId = getCurrentUserInfo.getCurrentUserId(token);
+        Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
+
+        Criteria criteria = new Criteria("accountId").is(accountId);
 
         if (description != null && !description.isEmpty()) {
             criteria = criteria.and("description").contains(description);
