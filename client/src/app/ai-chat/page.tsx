@@ -142,7 +142,7 @@ export default function AiChatPage() {
             console.error('Error getting AI response:', error);
             toast({
                 title: "Error",
-                description: `Failed to get response from AI: ${error.message}`,
+                description: `Failed to get response from AI: ${(error as Error).message || 'Unknown error'}`,
                 variant: "destructive",
             });
         } finally {

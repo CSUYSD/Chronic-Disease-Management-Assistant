@@ -60,11 +60,15 @@ const AiResponseFormatter: React.FC<AiResponseFormatterProps> = ({ text }) => {
                     li: ({node, ...props}) => <li className="mb-2" {...props} />,
                     strong: ({node, ...props}) => <strong className="font-semibold" {...props} />,
                     em: ({node, ...props}) => <em className="italic" {...props} />,
-                    code: ({node, inline, ...props}) =>
+                    code: ({ node, inline, className, children, ...props }: any) =>
                         inline ? (
-                            <code className="bg-gray-100 rounded px-1 py-0.5" {...props} />
+                            <code className="bg-gray-100 rounded px-1 py-0.5" {...props}>
+                                {children}
+                            </code>
                         ) : (
-                            <code className="block bg-gray-100 rounded p-4 my-4 whitespace-pre-wrap" {...props} />
+                            <code className="block bg-gray-100 rounded p-4 my-4 whitespace-pre-wrap" {...props}>
+                                {children}
+                            </code>
                         ),
                 }}
             >
