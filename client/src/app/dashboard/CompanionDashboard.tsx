@@ -12,6 +12,8 @@ import { UserPlus, Activity, Bot, Calendar, Mail, Phone, Heart, Droplet, Stethos
 import { BindPatientAPI, GetPatientInfo } from "@/api/companion"
 import { toast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { GetReportAPI } from "@/api/ai"
+import AiResponseFormatter from '@/components/AiResponseFormatter'
 
 interface HealthRecord {
     sbp: number
@@ -33,6 +35,11 @@ interface PatientDTO {
     avatar: string | null
     selectedAccountName: string
     healthRecords: HealthRecord[]
+}
+
+interface HealthReport {
+    content: string
+    generatedAt: string
 }
 
 interface CollapsibleProps {
@@ -61,6 +68,9 @@ export default function CompanionDashboard() {
     const [patient, setPatient] = useState<PatientDTO | null>(null)
     const [bindingCode, setBindingCode] = useState('')
     const [loading, setLoading] = useState(true)
+    const [report, setReport] = useState<HealthReport | null>(null)
+    const [reportStatus, setReportStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+    const [isReportExpanded, setIsReportExpanded] = useState(false)
 
     useEffect(() => {
         fetchPatientInfo()
@@ -71,6 +81,7 @@ export default function CompanionDashboard() {
             const response = await GetPatientInfo()
             if (response.status === 200) {
                 setPatient(response.data)
+                fetchHealthReport()
             }
         } catch (error: any) {
             console.error('Failed to fetch patient info:', error)
@@ -109,6 +120,26 @@ export default function CompanionDashboard() {
             })
         } finally {
             setLoading(false)
+        }
+    }
+
+    const fetchHealthReport = async () => {
+        setReportStatus('loading')
+        try {
+            const response = await GetReportAPI()
+            setReport({
+                content: response.data[0].content,
+                generatedAt: new Date().toISOString()
+            })
+            setReportStatus('idle')
+        } catch (error) {
+            console.error('Error fetching health report:', error)
+            setReportStatus('error')
+            toast({
+                title: "Error",
+                description: "Failed to fetch health report. Please try again later.",
+                variant: "destructive",
+            })
         }
     }
 
@@ -281,13 +312,59 @@ export default function CompanionDashboard() {
                 <TabsContent value="ai-report">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <Bot className="mr-2 h-5 w-5 text-purple-500" />
-                                AI Health Report
+                            <CardTitle className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <Bot className="mr-2 h-5 w-5 text-purple-500" />
+                                    AI Health Report
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setIsReportExpanded(!isReportExpanded)}
+                                >
+                                    {isReportExpanded ? (
+                                        <>
+                                            <ChevronUp className="h-4 w-4 mr-2" />
+                                            Collapse
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ChevronDown className="h-4 w-4 mr-2" />
+                                            Expand
+                                        </>
+                                    )}
+                                </Button>
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p>AI health report functionality is not implemented yet.</p>
+                            {reportStatus === 'loading' ? (
+                                <div className="flex justify-center items-center h-40">
+                                    <motion.div
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                        className="w-12 h-12 border-t-2 border-purple-500 rounded-full"
+                                    />
+                                </div>
+                            ) : reportStatus === 'error' ? (
+                                <div className="text-center text-gray-600">
+                                    <p>Unable to load the health report at this time. Please try again later.</p>
+                                </div>
+                            ) : report ? (
+                                <div className="prose max-w-none">
+                                    {isReportExpanded && report.content ? (
+                                        <AiResponseFormatter text={report.content} />
+                                    ) : (
+                                        <p className="text-gray-600">Click 'Expand' to view the full report.</p>
+                                    )}
+                                    {report.generatedAt && (
+                                        <p className="text-sm text-gray-500 mt-4">
+                                            Generated  at: {new Date(report.generatedAt).toLocaleString()}
+                                        </p>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-gray-600">No health report available.</p>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>

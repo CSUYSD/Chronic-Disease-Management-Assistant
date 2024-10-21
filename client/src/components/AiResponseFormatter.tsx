@@ -10,19 +10,34 @@ interface AiResponseFormatterProps {
 
 const AiResponseFormatter: React.FC<AiResponseFormatterProps> = ({ text }) => {
     const preprocessText = (input: string): string => {
-        // 直接将 ** 替换为 HTML 的 strong 标签
-        let processed = input.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        // Remove any existing HTML tags
+        let processed = input.replace(/<[^>]*>/g, '');
 
-        // 处理编号列表
-        processed = processed.replace(/(\d+)\.\s*<strong>/g, '$1. <strong>');
+        // Handle code blocks
+        processed = processed.replace(/```([\s\S]*?)```/g, (match, p1) => '```\n' + p1.trim() + '\n```');
 
-        // 处理破折号
+        // Handle inline code
+        processed = processed.replace(/`([^`]+)`/g, '`$1`');
+
+        // Handle bold text
+        processed = processed.replace(/\*\*([^*]+)\*\*/g, '**$1**');
+
+        // Handle italic text
+        processed = processed.replace(/\*([^*]+)\*/g, '*$1*');
+
+        // Handle numbered lists
+        processed = processed.replace(/(\d+)\.\s*/g, '$1. ');
+
+        // Handle unordered lists
+        processed = processed.replace(/^-\s*/gm, '- ');
+
+        // Handle hyphens
         processed = processed.replace(/(\w)-(\w)/g, '$1 - $2');
 
-        // 确保冒号后有空格
+        // Ensure colon is followed by a space
         processed = processed.replace(/:/g, ': ');
 
-        // 添加段落分隔
+        // Add paragraph separation
         processed = processed.replace(/\.\s+/g, '.\n\n');
 
         return processed;
@@ -36,15 +51,21 @@ const AiResponseFormatter: React.FC<AiResponseFormatterProps> = ({ text }) => {
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeRaw]}
                 components={{
-                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-lg font-bold mt-4 mb-2" {...props} />,
+                    h1: ({node, ...props}) => <h1 className="text-3xl font-bold mt-8 mb-4" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-2xl font-bold mt-6 mb-3" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-xl font-bold mt-5 mb-2" {...props} />,
                     p: ({node, ...props}) => <p className="mb-4 text-base leading-relaxed" {...props} />,
                     ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-4 mt-2 space-y-2" {...props} />,
                     ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-4 mt-2 space-y-2" {...props} />,
                     li: ({node, ...props}) => <li className="mb-2" {...props} />,
-                    strong: ({node, ...props}) => <strong className="font-bold" {...props} />,
+                    strong: ({node, ...props}) => <strong className="font-semibold" {...props} />,
                     em: ({node, ...props}) => <em className="italic" {...props} />,
+                    code: ({node, inline, ...props}) =>
+                        inline ? (
+                            <code className="bg-gray-100 rounded px-1 py-0.5" {...props} />
+                        ) : (
+                            <code className="block bg-gray-100 rounded p-4 my-4 whitespace-pre-wrap" {...props} />
+                        ),
                 }}
             >
                 {formattedText}
