@@ -7,6 +7,7 @@ import com.example.demo.model.Account;
 import com.example.demo.model.dto.AccountDTO;
 import com.example.demo.model.RedisAccount;
 import com.example.demo.model.userimpl.Patient;
+import com.example.demo.utility.GetCurrentUserInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,6 +29,7 @@ import com.example.demo.exception.UserNotFoundException;
 public class AccountService {
     private final PatientDao patientDao;
     private final AccountDao accountDao;
+    private final GetCurrentUserInfo getCurrentUserInfo;
 
     @Autowired
     @Qualifier("myRedisTemplate")
@@ -36,13 +38,24 @@ public class AccountService {
     private ObjectMapper redisObjectMapper;
 
     @Autowired
-    public AccountService(AccountDao accountDao, PatientDao patientDao) {
+    public AccountService(AccountDao accountDao, PatientDao patientDao, GetCurrentUserInfo getCurrentUserInfo) {
         this.accountDao = accountDao;
         this.patientDao = patientDao;
+        this.getCurrentUserInfo = getCurrentUserInfo;
     }
 
-    public List<Account> getAllAccounts() {
-        return accountDao.findAll();
+    public List<Account> getAllAccountsByUserId(String token) throws UserNotFoundException, AccountNotFoundException {
+        Long userId = getCurrentUserInfo.getCurrentUserId(token);
+        Patient patient = patientDao.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("用户未找到"));
+
+        List<Account> accounts = patient.getAccounts();
+
+        if (accounts == null || accounts.isEmpty()) {
+            throw new AccountNotFoundException("用户没有关联的账户");
+        }
+
+        return accounts;
     }
 
     public Account getAccountByAccountId(Long id) throws AccountNotFoundException {

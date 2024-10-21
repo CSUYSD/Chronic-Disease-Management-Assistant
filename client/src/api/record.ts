@@ -1,5 +1,34 @@
 import { request } from "@/utils";
 
+interface recordFormData {
+    sbp: number
+    dbp: number
+    isHeadache: string
+    isBackPain: string
+    isChestPain: string
+    isLessUrination: string
+    importTime: string
+    description: string
+}
+
+interface SearchParams {
+    keyword?: string
+    page?: number
+    size?: number
+}
+
+interface AdvancedSearchParams {
+    description?: string
+    minSbp?: number
+    maxSbp?: number
+    minDbp?: number
+    maxDbp?: number
+    isHeadache?: string
+    isBackPain?: string
+    isChestPain?: string
+    isLessUrination?: string
+}
+
 // Get all records for an account
 export function getAllRecordsAPI() {
     return request({
@@ -11,52 +40,16 @@ export function getAllRecordsAPI() {
     });
 }
 
-// Get a specific record by ID for an account
-export function getRecordByIdAPI(id) {
-    return request({
-        url: `/records/${id}`,
-        method: 'GET',
-    }).catch(error => {
-        console.error('API Error:', error);
-        throw error;
-    });
-}
-
-// get recent records
-export function getRecentRecordsAPI(duration) {
-    return request({
-        url: `/records/recent`,
-        method: 'GET',
-        params: {
-            duration: duration,
-        },
-    }).catch(error => {
-        console.error('API Error:', error);
-        throw error;
-    });
-}
-
-// Get records by type (income or expense)
-export function getRecordsByTypeAPI(type) {
-    return request({
-        url: `/records/by-type/${type}`,
-        method: 'GET',
-    }).catch(error => {
-        console.error('API Error:', error);
-        throw error;
-    });
-}
 
 // Create a new transaction record
-export function createRecordAPI(transactionRecord) {
-    console.log('Creating record:', transactionRecord);
+export function createRecordAPI(formData: recordFormData) {
     return request({
         url: '/records/create',
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        data: JSON.stringify(transactionRecord),
+        data: formData
     }).catch(error => {
         console.error('API Error:', error);
         throw error;
@@ -64,14 +57,14 @@ export function createRecordAPI(transactionRecord) {
 }
 
 // Update an existing transaction record
-export function updateRecordAPI(id, transactionRecord) {
+export function updateRecordAPI(id: string, formData: recordFormData) {
     return request({
         url: `/records/update/${id}`,
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
         },
-        data: JSON.stringify(transactionRecord),
+        data: formData
     }).catch(error => {
         console.error('API Error:', error);
         throw error;
@@ -79,7 +72,7 @@ export function updateRecordAPI(id, transactionRecord) {
 }
 
 // Delete a transaction record
-export function deleteRecordAPI(id) {
+export function deleteRecordAPI(id: string) {
     return request({
         url: `/records/delete/${id}`,
         method: 'DELETE',
@@ -90,14 +83,35 @@ export function deleteRecordAPI(id) {
 }
 
 // Delete multiple records in batch
-export function deleteRecordsInBatchAPI( recordIds) {
+export function deleteRecordsInBatchAPI(recordIds: string[]) {
     return request({
         url: `/records/batch`,
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        data: JSON.stringify(recordIds),
+        data: recordIds
+    }).catch(error => {
+        console.error('API Error:', error);
+        throw error;
+    });
+}
+
+// New function for basic search
+export function searchRecordsAPI({ keyword = '', page = 0, size = 10 }: SearchParams) {
+    return request({
+        url: '/api/records-search/search',
+        method: 'GET',
+        params: { keyword, page, size }
+    }).catch(error => {
+        console.error('API Error:', error);
+        throw error;
+    });
+}
+
+// New function for advanced search
+export function advancedSearchRecordsAPI(params: AdvancedSearchParams) {
+    return request({
+        url: '/api/records-search/advanced-search',
+        method: 'GET',
+        params
     }).catch(error => {
         console.error('API Error:', error);
         throw error;

@@ -14,9 +14,9 @@ export function BindPatientAPI(requestBody: BindPatientFormData) {
 }
 
 
-export function GetRandomString(id) {
+export function GetPatientInfo() {
     return request ({
-        url: `/users/randomString/${id}`,
-        method: "GET",
+        url: "/users/companion/patientInfo",
+        method: "GET"
     })
 }

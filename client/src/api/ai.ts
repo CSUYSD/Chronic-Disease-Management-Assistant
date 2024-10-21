@@ -16,6 +16,13 @@ interface ChatWithFileParams {
     conversationId: string;
 }
 
+interface HealthReport {
+    id: string;
+    date: string;
+    content: string;
+    // 添加其他健康报告可能包含的字段
+}
+
 const MessageAPI = 'ai/chat'
 
 const DocumentAPI = 'vector-db'
@@ -106,5 +113,17 @@ export function GenerateReportAPI(): Promise<AxiosResponse<string>> {
         url: `${AnalyserAPI}/health-report`,
         method: 'POST',
         responseType: 'text'
+    });
+}
+
+/**
+ * Chat with File API
+ * @returns {Promise<AxiosResponse<string>>} - The API response
+ */
+export function GetReportAPI(): Promise<AxiosResponse<HealthReport[]>> {
+    console.log("generate ai report");
+    return request({
+        url: "/health-report",
+        method: 'GET'
     });
 }

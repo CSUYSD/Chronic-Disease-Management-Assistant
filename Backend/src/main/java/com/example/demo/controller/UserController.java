@@ -5,8 +5,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.example.demo.model.User;
+import com.example.demo.model.dto.PatientDTO;
+import com.example.demo.model.userimpl.Companion;
 import com.example.demo.service.CompanionService;
 import com.example.demo.service.PatientService;
+import com.example.demo.utility.GetCurrentUserInfo;
 import com.example.demo.utility.jwt.JwtUtil;
 import org.hibernate.validator.constraints.URL;
 import org.slf4j.Logger;
@@ -31,14 +34,14 @@ public class UserController {
     private final UserService userService;
     private final CompanionService companionService;
     private final PatientService patientService;
-    private final JwtUtil jwtUtil;
+    private final GetCurrentUserInfo getCurrentUserInfo;
 
     @Autowired
-    public UserController(UserService userService, CompanionService companionService, PatientService patientService, JwtUtil jwtUtil) {
+    public UserController(UserService userService, CompanionService companionService, PatientService patientService, GetCurrentUserInfo getCurrentUserInfo) {
         this.userService = userService;
         this.companionService = companionService;
         this.patientService = patientService;
-        this.jwtUtil = jwtUtil;
+        this.getCurrentUserInfo = getCurrentUserInfo;
     }
 
     @Autowired
@@ -130,16 +133,28 @@ public class UserController {
         return message;
     }
 
-//    @GetMapping("/companion/patientInfo")
-//    public ResponseEntity<String> getPatientInfo(@RequestHeader("Authorization") String token){
-//        Long companionId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
-//        Patient patient = companionService.GetPatientInfo(companionId);
-//    }
-
-    @GetMapping("/randomString/{id}")
-    public ResponseEntity<String> getRandomString(@PathVariable Long id) {
+    @GetMapping("/companion/patientInfo")
+    public ResponseEntity<PatientDTO> getPatientInfo(@RequestHeader("Authorization") String token) {
         try {
-            String randomString = patientService.getRandomStringById(id); // 调用 PatientService 获取 randomString
+            PatientDTO patientDTO = companionService.getPatientDTOForCompanion(token);
+
+            if (patientDTO == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+
+            return ResponseEntity.ok(patientDTO);
+
+        } catch (Exception e) {
+            logger.error("Error getting patient info for companion", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/randomString")
+    public ResponseEntity<String> getRandomString(@RequestHeader("Authorization") String token) {
+        try {
+            Long patientId = getCurrentUserInfo.getCurrentUserId(token);
+            String randomString = patientService.getRandomStringById(patientId); // 调用 PatientService 获取 randomString
             return ResponseEntity.ok(randomString);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -152,7 +167,7 @@ public class UserController {
     @PostMapping("/bindCompanion")
     public ResponseEntity<String> bindPatient(@RequestHeader("Authorization") String token, @RequestBody Map<String, String> requestBody) {
 
-        Long companionId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        Long companionId = getCurrentUserInfo.getCurrentUserId(token);
         String randomString = requestBody.get("randomString");
 
         boolean success = companionService.bindCompanionToPatient(companionId, randomString);
