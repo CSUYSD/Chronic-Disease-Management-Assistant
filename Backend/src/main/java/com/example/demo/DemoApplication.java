@@ -49,31 +49,38 @@ public class DemoApplication {
 		return new OpenAiEmbeddingModel(new OpenAiApi(openAiApiKey));
 	}
 
-	@Bean
-	public RestClient.Builder restClientBuilder() {
-		return RestClient.builder()
-				.requestFactory(new SimpleClientHttpRequestFactory());
-	}
-
-	@Bean
-	public ChromaApi chromaApi(RestClient.Builder restClientBuilder) {
-		String chromaUrl = "http://chroma:8000";
-		ChromaApi chromaApi = new ChromaApi(chromaUrl, restClientBuilder);
-		chromaApi.withKeyToken("admin:admin");
-		return chromaApi;
-	}
-
-	@Bean
-	public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-		try {
-			VectorStore store = new ChromaVectorStore(embeddingModel, chromaApi, "health-ai", true);
-			System.out.println("ChromaVectorStore initialized successfully");
-			return store;
-		} catch (Exception e) {
-			System.err.println("init ChromaVectorStore error: " + e.getMessage());
-			e.printStackTrace();
-			throw e;
-		}
-	}
+//	@Bean
+//	public RestClient.Builder restClientBuilder() {
+//		return RestClient.builder()
+//				.requestFactory(new SimpleClientHttpRequestFactory());
+//	}
+//
+//	@Bean
+//	public ChromaApi chromaApi(RestClient.Builder restClientBuilder) {
+//		String chromaUrl = "http://chroma:8000";
+//		ChromaApi chromaApi = new ChromaApi(chromaUrl, restClientBuilder);
+//		chromaApi.withKeyToken("admin:admin");
+//		return chromaApi;
+//	}
+//
+//	@Bean
+//	public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
+//		try {
+//			// Create the "health-ai" collection
+//			String collectionName = "health-ai";
+//			ChromaApi.CreateCollectionRequest request = new ChromaApi.CreateCollectionRequest(collectionName);
+//			ChromaApi.Collection collection = chromaApi.createCollection(request);
+//			System.out.println("Collection created successfully: " + collection.name());
+//
+//			// Initialize ChromaVectorStore with the created collection
+//			VectorStore store = new ChromaVectorStore(embeddingModel, chromaApi, collectionName, true);
+//			System.out.println("ChromaVectorStore initialized successfully");
+//			return store;
+//		} catch (Exception e) {
+//			System.err.println("Error initializing ChromaVectorStore: " + e.getMessage());
+//			e.printStackTrace();
+//			throw e;
+//		}
+//	}
 
 }

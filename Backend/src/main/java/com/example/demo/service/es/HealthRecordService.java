@@ -1,10 +1,9 @@
 package com.example.demo.service.es;
 
 import com.example.demo.model.HealthRecord;
-import com.example.demo.model.HealthRecordDocument;
+import com.example.demo.model.es.HealthRecordDocument;
 import com.example.demo.repository.HealthRecordESRepository;
 import com.example.demo.utility.GetCurrentUserInfo;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;

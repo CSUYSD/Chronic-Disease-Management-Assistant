@@ -16,8 +16,8 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
-      chroma-init:
-        condition: service_completed_successfully
+      chroma:
+        condition: service_healthy
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/health-care?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
@@ -28,6 +28,7 @@ services:
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_AI_VECTORSTORE_CHROMA_CLIENT_HOST=http://chroma
       - SPRING_AI_VECTORSTORE_CHROMA_CLIENT_PORT=8000
+      - SPRING_AI_VECTORSTORE_CHROMA_CLIENT_AUTH_CREDENTIALS=admin:admin
 
   frontend:
     build: ../client
@@ -100,22 +101,20 @@ services:
       - ./data/chroma:/chroma/chroma
     ports:
       - "8000:8000"
+    environment:
+      - CHROMA_SERVER_AUTH_CREDENTIALS=admin:admin
+      - CHROMA_SERVER_AUTH_PROVIDER=basic
+    command:
+      - "--workers=1"
+      - "--host=0.0.0.0"
+      - "--proxy-headers"
+      - "--timeout-keep-alive=30"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  chroma-init:
-    build:
-      context: .
-      dockerfile: Dockerfile.chroma-init
-    depends_on:
-      chroma:
-        condition: service_healthy
-    environment:
-      - CHROMA_HOST=chroma
-      - CHROMA_PORT=8000
 
 volumes:
   mysql_data:
