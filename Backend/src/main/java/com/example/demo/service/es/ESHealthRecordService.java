@@ -3,7 +3,8 @@ package com.example.demo.service.es;
 import com.example.demo.model.HealthRecord;
 import com.example.demo.model.HealthRecordDocument;
 import com.example.demo.repository.HealthRecordESRepository;
-import org.springframework.data.domain.Page;
+import com.example.demo.utility.converter.HealthRecordConverter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
@@ -16,18 +17,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class HealthRecordService {
+public class ESHealthRecordService {
 
     private final HealthRecordESRepository healthRecordESRepository;
     private final ElasticsearchOperations elasticsearchOperations;
 
-    public HealthRecordService(HealthRecordESRepository healthRecordESRepository, ElasticsearchOperations elasticsearchOperations) {
+    @Autowired
+    public ESHealthRecordService(HealthRecordESRepository healthRecordESRepository, ElasticsearchOperations elasticsearchOperations) {
         this.healthRecordESRepository = healthRecordESRepository;
         this.elasticsearchOperations = elasticsearchOperations;
     }
 
     public void syncHealthRecord(HealthRecord healthRecord) {
-        HealthRecordDocument document = convertToDocument(healthRecord);
+        HealthRecordDocument document = HealthRecordConverter.convertToDocument(healthRecord);
         healthRecordESRepository.save(document);
     }
 
@@ -76,19 +78,5 @@ public class HealthRecordService {
                 .collect(Collectors.toList());
     }
 
-    private HealthRecordDocument convertToDocument(HealthRecord healthRecord) {
-        HealthRecordDocument document = new HealthRecordDocument();
-        document.setId(String.valueOf(healthRecord.getId()));
-        document.setSbp(healthRecord.getSbp());
-        document.setDbp(healthRecord.getDbp());
-        document.setIsHeadache(healthRecord.getIsHeadache());
-        document.setIsBackPain(healthRecord.getIsBackPain());
-        document.setIsChestPain(healthRecord.getIsChestPain());
-        document.setIsLessUrination(healthRecord.getIsLessUrination());
-        document.setImportTime(healthRecord.getImportTime());
-        document.setDescription(healthRecord.getDescription());
-        document.setUserId(healthRecord.getUserId());
-        document.setAccountId(healthRecord.getAccount().getId());
-        return document;
-    }
+
 }

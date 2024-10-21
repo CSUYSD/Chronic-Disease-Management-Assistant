@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.example.demo.model.message.AnalyseRequest;
-import com.example.demo.service.es.HealthRecordService;
+import com.example.demo.service.es.ESHealthRecordService;
 import com.example.demo.service.rabbitmq.RabbitMQService;
 import com.example.demo.utility.GetCurrentUserInfo;
 import com.example.demo.utility.converter.HealthRecordConverter;
@@ -26,26 +26,26 @@ import com.example.demo.utility.jwt.JwtUtil;
 import jakarta.transaction.Transactional;
 
 @Service
-public class RecordService {
+public class HealthRecordService {
     private final RecordDao recordDao;
     private final PatientDao patientDao;
     private final AccountDao accountDao;
     private final JwtUtil jwtUtil;
     private final RabbitMQService rabbitMQService;
-    private final HealthRecordService healthRecordService;
+    private final ESHealthRecordService ESHealthRecordService;
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
     @Autowired
     private GetCurrentUserInfo getCurrentUserInfo;
 
     @Autowired
-    public RecordService(RecordDao recordDao, JwtUtil jwtUtil, AccountDao accountDao, PatientDao patientDao, RabbitMQService rabbitMQService, HealthRecordService healthRecordService) {
+    public HealthRecordService(RecordDao recordDao, JwtUtil jwtUtil, AccountDao accountDao, PatientDao patientDao, RabbitMQService rabbitMQService, ESHealthRecordService ESHealthRecordService) {
         this.recordDao = recordDao;
         this.patientDao = patientDao;
         this.jwtUtil = jwtUtil;
         this.accountDao = accountDao;
         this.rabbitMQService = rabbitMQService;
-        this.healthRecordService = healthRecordService;
+        this.ESHealthRecordService = ESHealthRecordService;
     }
 
     public List<HealthRecord> getAllRecordsByAccountId(Long accountId) {
@@ -69,7 +69,7 @@ public class RecordService {
         healthRecord.setUserId(userId);
         recordDao.save(healthRecord);
 //        sync health record to elastic search
-        healthRecordService.syncHealthRecord(healthRecord);
+        ESHealthRecordService.syncHealthRecord(healthRecord);
         // Send the latest health record to AI analyser
         String currentRecord = PromptConverter.parseLatestHealthRecordToPrompt(healthRecordDTO);
         System.out.printf("===============================currentRecord: %s===============================", currentRecord);
