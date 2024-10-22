@@ -65,8 +65,8 @@ dependencies {
 	implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 //	// Chroma Vector DB
 //	implementation 'org.springframework.ai:spring-ai-chroma-store-spring-boot-starter'
-//	Pinecone vector DB
-	implementation 'org.springframework.ai:spring-ai-pinecone-store-spring-boot-starter'
+//	Redis stack vector DB
+	implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
 	// MQ
 	implementation 'org.springframework.boot:spring-boot-starter-amqp'
 	//Websocket

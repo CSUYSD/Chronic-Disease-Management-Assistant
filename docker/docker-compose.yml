@@ -13,10 +13,10 @@ services:
       mysql:
         condition: service_healthy
       redis:
-        condition: service_started
-      rabbitmq:
         condition: service_healthy
-      chroma:
+      redis-stack:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/health-care?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
@@ -24,11 +24,12 @@ services:
       - SPRING_DATASOURCE_PASSWORD=rootpassword
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
       - SPRING_DATA_ELASTICSEARCH_URIS=http://elasticsearch:9200
       - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_AI_VECTORSTORE_CHROMA_CLIENT_HOST=http://chroma
-      - SPRING_AI_VECTORSTORE_CHROMA_CLIENT_PORT=8000
-      - SPRING_AI_VECTORSTORE_CHROMA_CLIENT_AUTH_CREDENTIALS=admin:admin
+      - REDIS_STACK_HOST=redis-stack
+      - REDIS_STACK_PORT=6379
+      - REDIS_STACK_PASSWORD=123456
 
   frontend:
     build: ../client
@@ -53,10 +54,29 @@ services:
 
   redis:
     image: redis:6.2-alpine
-    volumes:
-      - ./data/redis:/data
     ports:
       - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-stack:
+    image: redis/redis-stack:latest
+    volumes:
+      - ./data/redis-stack:/data
+    ports:
+      - "6380:6379"
+    environment:
+      - REDIS_ARGS=--requirepass 123456
+    healthcheck:
+      test: ["CMD", "redis-cli", "-h", "localhost", "-p", "6379", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
@@ -95,30 +115,9 @@ services:
       timeout: 10s
       retries: 5
 
-  chroma:
-    image: ghcr.io/chroma-core/chroma:latest
-    volumes:
-      - ./data/chroma:/chroma/chroma
-    ports:
-      - "8000:8000"
-    environment:
-      - CHROMA_SERVER_AUTH_CREDENTIALS=admin:admin
-      - CHROMA_SERVER_AUTH_PROVIDER=basic
-    command:
-      - "--workers=1"
-      - "--host=0.0.0.0"
-      - "--proxy-headers"
-      - "--timeout-keep-alive=30"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-
 volumes:
   mysql_data:
   redis_data:
+  redis_stack_data:
   elasticsearch_data:
   rabbitmq_data:
-  chroma_data:

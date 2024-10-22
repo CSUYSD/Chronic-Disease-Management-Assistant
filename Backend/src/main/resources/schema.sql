@@ -68,9 +68,7 @@
 --     import_time TIMESTAMP,
 --     description VARCHAR(255),
 --     account_id BIGINT,
---     user_id BIGINT,
 --     FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
---     FOREIGN KEY (user_id) REFERENCES patient(id) ON DELETE CASCADE
 -- );
 --
 -- CREATE TABLE health_report (
