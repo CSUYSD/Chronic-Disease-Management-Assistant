@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Activity, Calendar, Edit, PlusCircle, Search, Trash2, Heart, Droplet, ArrowLeft } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 import { switchDisease, GetAllDiseases, getCurrentDisease } from "@/api/patient"
 import { getAllRecordsAPI, createRecordAPI, deleteRecordAPI, updateRecordAPI } from "@/api/record"
 import { toast } from "@/hooks/use-toast"
@@ -78,7 +79,6 @@ export default function PatientDashboard() {
             setSelectedDisease(response.data.accountName)
         } catch (error) {
             console.error('Error fetching current disease:', error)
-            // No disease selected yet, so we don't show an error toast
             setSelectedDisease(null)
         }
     }, [])
@@ -138,7 +138,6 @@ export default function PatientDashboard() {
                 description: "Health record created successfully.",
             })
 
-            // Add animation effect for the new record
             const newRecordElement = document.querySelector('.health-record:first-child')
             if (newRecordElement) {
                 newRecordElement.classList.add('animate-pulse')
@@ -370,11 +369,11 @@ export default function PatientDashboard() {
                                                                             id="edit-isHeadache"
                                                                             value={editingRecord?.isHeadache}
                                                                             onChange={(e) => setEditingRecord(prev => prev ? {...prev, isHeadache: e.target.value} : null)}
-
                                                                             className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                                                         >
                                                                             <option value="YES">Yes</option>
                                                                             <option value="NO">No</option>
+
                                                                         </select>
                                                                     </div>
                                                                     <div>
@@ -452,101 +451,105 @@ export default function PatientDashboard() {
                 <TabsContent value="new">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <PlusCircle className="mr-2 h-5 w-5 text-green-500" />
+                            <CardTitle className="flex items-center text-2xl">
+                                <PlusCircle className="mr-2 h-6 w-6 text-green-500" />
                                 Add New Record
                             </CardTitle>
+                            <CardDescription>Enter your health information for today</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handleSubmit}>
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor="sbp">Systolic BP</Label>
-                                            <Input
-                                                id="sbp"
-                                                type="number"
-                                                value={newRecord.sbp}
-                                                onChange={(e) => setNewRecord({ ...newRecord, sbp: parseInt(e.target.value) })}
-                                                required
-                                                className="mt-1"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="dbp">Diastolic BP</Label>
-                                            <Input
-                                                id="dbp"
-                                                type="number"
-                                                value={newRecord.dbp}
-                                                onChange={(e) => setNewRecord({ ...newRecord, dbp: parseInt(e.target.value) })}
-                                                required
-                                                className="mt-1"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor="isHeadache">Headache</Label>
-                                            <select
-                                                id="isHeadache"
-                                                value={newRecord.isHeadache}
-                                                onChange={(e) => setNewRecord({ ...newRecord, isHeadache: e.target.value })}
-                                                className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                            >
-                                                <option value="YES">Yes</option>
-                                                <option value="NO">No</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="isBackPain">Back Pain</Label>
-                                            <select
-                                                id="isBackPain"
-                                                value={newRecord.isBackPain}
-                                                onChange={(e) => setNewRecord({ ...newRecord, isBackPain: e.target.value })}
-                                                className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                            >
-                                                <option value="YES">Yes</option>
-                                                <option value="NO">No</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor="isChestPain">Chest Pain</Label>
-                                            <select
-                                                id="isChestPain"
-                                                value={newRecord.isChestPain}
-                                                onChange={(e) => setNewRecord({ ...newRecord, isChestPain: e.target.value })}
-                                                className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                            >
-                                                <option value="YES">Yes</option>
-                                                <option value="NO">No</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="isLessUrination">Less Urination</Label>
-                                            <select
-                                                id="isLessUrination"
-                                                value={newRecord.isLessUrination}
-                                                onChange={(e) => setNewRecord({ ...newRecord, isLessUrination: e.target.value })}
-                                                className="w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                            >
-                                                <option value="YES">Yes</option>
-                                                <option value="NO">No</option>
-                                            </select>
-                                        </div>
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <Label htmlFor="sbp" className="text-lg font-semibold">Systolic Blood Pressure</Label>
+                                        <Input
+                                            id="sbp"
+                                            type="number"
+                                            placeholder="Enter SBP"
+                                            value={newRecord.sbp}
+                                            onChange={(e) => setNewRecord({ ...newRecord, sbp: parseInt(e.target.value) })}
+                                            required
+                                            className="mt-2"
+                                        />
                                     </div>
                                     <div>
-                                        <Label htmlFor="description">Description</Label>
-                                        <Textarea
-                                            id="description"
-                                            value={newRecord.description}
-                                            onChange={(e) => setNewRecord({ ...newRecord, description: e.target.value })}
-                                            className="mt-1"
+                                        <Label htmlFor="dbp" className="text-lg font-semibold">Diastolic Blood Pressure</Label>
+                                        <Input
+                                            id="dbp"
+                                            type="number"
+                                            placeholder="Enter DBP"
+                                            value={newRecord.dbp}
+                                            onChange={(e) => setNewRecord({ ...newRecord, dbp: parseInt(e.target.value) })}
+                                            required
+                                            className="mt-2"
                                         />
                                     </div>
                                 </div>
-                                <Button type="submit" className="mt-4 w-full" disabled={isLoading}>
+                                <div>
+                                    <h3 className="text-lg font-semibold mb-2">Symptoms</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="isHeadache"
+                                                checked={newRecord.isHeadache === 'YES'}
+                                                onCheckedChange={(checked) =>
+                                                    setNewRecord({ ...newRecord, isHeadache: checked ? 'YES' : 'NO' })
+                                                }
+                                            />
+                                            <Label htmlFor="isHeadache" className="flex items-center">
+                                                <span className="mr-2">🌡️</span> Headache
+                                            </Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="isBackPain"
+                                                checked={newRecord.isBackPain === 'YES'}
+                                                onCheckedChange={(checked) =>
+                                                    setNewRecord({ ...newRecord, isBackPain: checked ? 'YES' : 'NO' })
+                                                }
+                                            />
+                                            <Label htmlFor="isBackPain" className="flex items-center">
+                                                <span className="mr-2">😣</span> Back Pain
+                                            </Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="isChestPain"
+                                                checked={newRecord.isChestPain === 'YES'}
+                                                onCheckedChange={(checked) =>
+                                                    setNewRecord({ ...newRecord, isChestPain: checked ? 'YES' : 'NO' })
+                                                }
+                                            />
+                                            <Label htmlFor="isChestPain" className="flex items-center">
+                                                <span className="mr-2">❤️</span> Chest Pain
+                                            </Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="isLessUrination"
+                                                checked={newRecord.isLessUrination === 'YES'}
+                                                onCheckedChange={(checked) =>
+                                                    setNewRecord({ ...newRecord, isLessUrination: checked ? 'YES' : 'NO' })
+                                                }
+                                            />
+                                            <Label htmlFor="isLessUrination" className="flex items-center">
+                                                <span className="mr-2">💧</span> Less Urination
+                                            </Label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <Label htmlFor="description" className="text-lg font-semibold">Description</Label>
+                                    <Textarea
+                                        id="description"
+                                        placeholder="Add any additional notes or observations here..."
+                                        value={newRecord.description}
+                                        onChange={(e) => setNewRecord({ ...newRecord, description: e.target.value })}
+                                        className="mt-2"
+                                        rows={4}
+                                    />
+                                </div>
+                                <Button type="submit" className="w-full" disabled={isLoading}>
                                     {isLoading ? (
                                         <motion.div
                                             animate={{ rotate: 360 }}
@@ -555,7 +558,7 @@ export default function PatientDashboard() {
                                         />
                                     ) : (
                                         <>
-                                            <PlusCircle className="mr-2 h-4 w-4" /> Add Record
+                                            <PlusCircle className="mr-2 h-4 w-4" /> Add Health Record
                                         </>
                                     )}
                                 </Button>

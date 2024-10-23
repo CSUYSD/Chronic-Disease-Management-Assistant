@@ -4,9 +4,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from 'framer-motion'
-import { Home, MessageSquare, Mail, User, LogOut } from 'lucide-react'
+import {Home, MessageSquare, Mail, User, LogOut, FileText} from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { logoutAPI } from "@/api/user";
+
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
@@ -48,6 +49,12 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                                 <Link href="/ai-chat">
                                     <MessageSquare className="mr-2 h-4 w-4" />
                                     AI Chat
+                                </Link>
+                            </Button>
+                            <Button asChild variant="ghost" className="w-full justify-start">
+                                <Link href="/health-resource">
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    Health Resource
                                 </Link>
                             </Button>
                             <Button asChild variant="ghost" className="w-full justify-start">
