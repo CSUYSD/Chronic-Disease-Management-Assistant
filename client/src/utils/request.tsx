@@ -2,9 +2,15 @@ import axios from "axios";
 import { getToken, removeToken } from "./token";
 
 const request = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://3.106.177.60/api',
     timeout: 100000,
 });
+
+// 添加错误处理
+if (!process.env.NEXT_PUBLIC_API_URL) {
+    console.error('NEXT_PUBLIC_API_URL is not defined');
+}
+
 
 request.interceptors.request.use((config) => {
     const token = getToken();
