@@ -70,5 +70,4 @@ public class AiChatController {
         log.info("Chat bot received health report from AI analyser");
         chatMemory.add(currentConversationId, new SystemMessage(report));
     }
-
 }

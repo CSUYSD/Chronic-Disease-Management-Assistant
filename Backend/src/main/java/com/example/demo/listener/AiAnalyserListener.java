@@ -1,7 +1,7 @@
 package com.example.demo.listener;
 
 import com.example.demo.model.message.AnalyseRequest;
-import com.example.demo.service.RecordService;
+import com.example.demo.service.HealthRecordService;
 import com.example.demo.service.ai.AiAnalyserService;
 import com.example.demo.utility.converter.PromptConverter;
 import com.example.demo.utility.GetCurrentUserInfo;
@@ -16,14 +16,14 @@ import org.springframework.stereotype.Component;
 public class AiAnalyserListener {
     public final AiAnalyserService aiAnalyserService;
     public final GetCurrentUserInfo getCurrentUserInfo;
-    public final RecordService recordService;
+    public final HealthRecordService healthRecordService;
     public final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public AiAnalyserListener(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, RecordService recordService, SimpMessagingTemplate messagingTemplate) {
+    public AiAnalyserListener(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, HealthRecordService healthRecordService, SimpMessagingTemplate messagingTemplate) {
         this.aiAnalyserService = aiAnalyserService;
         this.getCurrentUserInfo = getCurrentUserInfo;
-        this.recordService = recordService;
+        this.healthRecordService = healthRecordService;
         this.messagingTemplate = messagingTemplate;
         log.info("AiAnalyserListener initialized with dependencies");
     }
@@ -37,7 +37,7 @@ public class AiAnalyserListener {
         long accountId = request.getAccountId();
         log.debug("Processing current record: {}", currentRecord);
         log.info("Fetching recent records for accountId: {}", accountId);
-        String recentRecords = PromptConverter.parseRecentHealthRecordsToPrompt(recordService.getCertainDaysRecords(accountId, 10));
+        String recentRecords = PromptConverter.parseRecentHealthRecordsToPrompt(healthRecordService.getCertainDaysRecords(accountId, 10));
         log.info("Recent records parsed: {}", recentRecords);
 
         log.info("Analyzing current record with AI service");

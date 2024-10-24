@@ -1,53 +1,84 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import React, { useEffect, useCallback, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/hooks/use-toast"
-import { User, Mail, Key, Calendar, Heart } from 'lucide-react'
+import { User, Mail, Phone, Calendar, Heart, Camera, Key } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { getProfileAPI } from "@/api/user"
-import { setProfile, selectProfile, selectIsLoading } from '@/store/profileSlice'
+import { getProfileAPI, updateUserAPI } from "@/api/user"
+import { GetRandomString } from "@/api/patient"
+import { setProfile, selectProfile, selectIsLoading, setError, updateProfile } from '@/store/profileSlice'
 import { AppDispatch } from '@/store'
-import { selectProfile as selectStoredProfile } from '@/store/profileSlice'
 
 export default function ProfilePage() {
     const dispatch = useDispatch<AppDispatch>()
     const profile = useSelector(selectProfile)
     const isLoading = useSelector(selectIsLoading)
-    const storedProfile = useSelector(selectStoredProfile)
+    const [isEditing, setIsEditing] = useState(false)
+    const [initialFetchDone, setInitialFetchDone] = useState(false)
+    const [bindingCode, setBindingCode] = useState<string | null>(null)
+    const [editedProfile, setEditedProfile] = useState(profile || {
+        username: '',
+        email: '',
+        phone: '',
+        dob: '',
+        bio: '',
+        // 添加其他必要的字段，确保它们都有默认值
+    })
 
     const fetchProfile = useCallback(async () => {
         try {
             const response = await getProfileAPI()
-            const newProfileData = {
-                ...response.data,
-                role: storedProfile?.role || response.data.role
-            }
-
-            // Check if the new profile data is different from the stored profile
-            if (JSON.stringify(newProfileData) !== JSON.stringify(storedProfile)) {
-                dispatch(setProfile(newProfileData))
-            }
+            dispatch(setProfile(response.data))
         } catch (error) {
             console.error('Failed to fetch profile:', error)
+            dispatch(setError('Failed to load profile. Please try again later.'))
             toast({
                 title: "Error",
                 description: "Failed to load profile. Please try again later.",
                 variant: "destructive",
             })
         }
-    }, [dispatch, storedProfile])
+    }, [dispatch])
 
     useEffect(() => {
-        if (!storedProfile) {
+        if (!initialFetchDone) {
             fetchProfile()
+            setInitialFetchDone(true)
         }
-    }, [fetchProfile, storedProfile])
+    }, [fetchProfile, initialFetchDone])
+
+    useEffect(() => {
+        if (profile) {
+            setEditedProfile(profile)
+        }
+    }, [profile])
+
+    useEffect(() => {
+        const fetchBindingCode = async () => {
+            if (profile?.role === 'patient') {
+                try {
+                    const response = await GetRandomString()
+                    setBindingCode(response.data)
+                } catch (error) {
+                    console.error('Failed to fetch binding code:', error)
+                    toast({
+                        title: "Error",
+                        description: "Failed to fetch binding code. Please try again later.",
+                        variant: "destructive",
+                    })
+                }
+            }
+        }
+
+        fetchBindingCode()
+    }, [profile?.role])
 
     if (isLoading) {
         return (
@@ -83,13 +114,29 @@ export default function ProfilePage() {
         )
     }
 
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target
+        setEditedProfile(prev => ({ ...prev, [name]: value }))
+    }
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
-        // Here you would call the API to update the profile
-        toast({
-            title: "Profile Updated",
-            description: "Your profile has been successfully updated.",
-        })
+        try {
+            const response = await updateUserAPI(editedProfile)
+            dispatch(updateProfile(response.data))
+            setIsEditing(false)
+            toast({
+                title: "Success",
+                description: "Your profile has been successfully updated.",
+            })
+        } catch (error) {
+            console.error('Failed to update profile:', error)
+            toast({
+                title: "Error",
+                description: "Failed to update profile. Please try again later.",
+                variant: "destructive",
+            })
+        }
     }
 
     return (
@@ -126,7 +173,7 @@ export default function ProfilePage() {
                             <CardContent>
                                 <form onSubmit={handleSubmit} className="space-y-6">
                                     <AnimatePresence>
-                                        {['username', 'email', 'dob'].map((field, index) => (
+                                        {['username', 'email', 'phone', 'dob'].map((field, index) => (
                                             <motion.div
                                                 key={field}
                                                 initial={{ opacity: 0, y: 20 }}
@@ -138,14 +185,17 @@ export default function ProfilePage() {
                                                 <Label htmlFor={field} className="flex items-center text-lg">
                                                     {field === 'username' && <User className="mr-2 h-5 w-5 text-gray-500" />}
                                                     {field === 'email' && <Mail className="mr-2 h-5 w-5 text-gray-500" />}
+                                                    {field === 'phone' && <Phone className="mr-2 h-5 w-5 text-gray-500" />}
                                                     {field === 'dob' && <Calendar className="mr-2 h-5 w-5 text-gray-500" />}
                                                     {field.charAt(0).toUpperCase() + field.slice(1)}
                                                 </Label>
                                                 <Input
                                                     id={field}
-                                                    value={profile[field]}
-                                                    readOnly
-                                                    className="bg-gray-100"
+                                                    name={field}
+                                                    value={editedProfile[field as keyof typeof editedProfile] || ''}
+                                                    onChange={handleInputChange}
+                                                    readOnly={!isEditing}
+                                                    className={isEditing ? "bg-white" : "bg-gray-100"}
                                                 />
                                             </motion.div>
                                         ))}
@@ -156,20 +206,40 @@ export default function ProfilePage() {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3, delay: 0.3 }}
                                     >
-                                        <Label htmlFor="healthMetrics" className="flex items-center text-lg">
+                                        <Label htmlFor="bio" className="flex items-center text-lg">
                                             <Heart className="mr-2 h-5 w-5 text-red-500" />
-                                            Health Metrics
+                                            Bio
                                         </Label>
-                                        <Button className="w-full">View Health Dashboard</Button>
+                                        <Textarea
+                                            id="bio"
+                                            name="bio"
+                                            value={editedProfile.bio || ''}
+                                            onChange={handleInputChange}
+                                            readOnly={!isEditing}
+                                            className={isEditing ? "bg-white" : "bg-gray-100"}
+                                            rows={4}
+                                        />
                                     </motion.div>
                                     <motion.div
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3, delay: 0.4 }}
+                                        className="flex justify-end space-x-4"
                                     >
-                                        <Button type="submit" className="w-full text-lg py-6">
-                                            <Key className="mr-2 h-5 w-5" /> Update Profile
-                                        </Button>
+                                        {isEditing ? (
+                                            <>
+                                                <Button type="submit" className="bg-green-500 hover:bg-green-600 text-white">
+                                                    <Key className="mr-2 h-5 w-5" /> Save Changes
+                                                </Button>
+                                                <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
+                                                    Cancel
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <Button type="button" onClick={() => setIsEditing(true)}>
+                                                <Camera className="mr-2 h-5 w-5" /> Edit Profile
+                                            </Button>
+                                        )}
                                     </motion.div>
                                 </form>
                             </CardContent>
@@ -195,8 +265,8 @@ export default function ProfilePage() {
                                     transition={{ type: "spring", stiffness: 400, damping: 10 }}
                                 >
                                     <Avatar className="h-32 w-32">
-                                        <AvatarImage src={profile.avatar || '/default-avatar.png'} alt={profile.username} />
-                                        <AvatarFallback>{profile.username.charAt(0).toUpperCase()}</AvatarFallback>
+                                        <AvatarImage src={profile.avatar || '/placeholder.svg?height=128&width=128'} alt={profile.username} />
+                                        <AvatarFallback>{profile.username ? profile.username.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
                                     </Avatar>
                                 </motion.div>
                                 <motion.div
@@ -205,8 +275,8 @@ export default function ProfilePage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.5, delay: 0.6 }}
                                 >
-                                    <h2 className="text-2xl font-semibold text-gray-800">{profile.username}</h2>
-                                    <p className="text-lg text-gray-600">{profile.email}</p>
+                                    <h2 className="text-2xl font-semibold text-gray-800">{profile.username || 'N/A'}</h2>
+                                    <p className="text-lg text-gray-600">{profile.email || 'N/A'}</p>
                                 </motion.div>
                                 <motion.div
                                     className="pt-4 space-y-4"
@@ -216,7 +286,11 @@ export default function ProfilePage() {
                                 >
                                     <div className="flex items-center text-lg">
                                         <Calendar className="mr-2 h-5 w-5 text-gray-500" />
-                                        <span>Born: {profile.dob}</span>
+                                        <span>Born: {profile.dob || 'Not provided'}</span>
+                                    </div>
+                                    <div className="flex items-center text-lg">
+                                        <Phone className="mr-2 h-5 w-5 text-gray-500" />
+                                        <span>Phone: {profile.phone || 'Not provided'}</span>
                                     </div>
                                     <motion.div
                                         className="bg-gray-100 p-4 rounded-lg"
@@ -224,10 +298,23 @@ export default function ProfilePage() {
                                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
                                     >
                                         <p className="text-gray-800 font-medium">
-                                            Track your health journey with us!
+                                            {profile.bio || 'Add a bio to tell us more about yourself!'}
                                         </p>
                                     </motion.div>
                                 </motion.div>
+                                {profile.role === 'patient' && bindingCode && (
+                                    <motion.div
+                                        className="pt-4"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.5, delay: 1 }}
+                                    >
+                                        <div className="flex items-center text-lg">
+                                            <Key className="mr-2 h-5 w-5 text-gray-500" />
+                                            <span>Binding Code: {bindingCode}</span>
+                                        </div>
+                                    </motion.div>
+                                )}
                             </CardContent>
                         </Card>
                     </motion.div>

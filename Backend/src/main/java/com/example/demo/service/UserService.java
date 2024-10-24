@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import com.example.demo.model.userimpl.Companion;
+import com.example.demo.repository.CompanionDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,17 +33,18 @@ public class UserService {
     private final UserDao userDao;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
-
     private final PasswordEncoder passwordEncoder;
     private final PatientDao patientDao;
+    private final CompanionDao companionDao;
 
     @Autowired
-    public UserService(PatientDao patientDao, UserDao userDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder) {
+    public UserService(PatientDao patientDao, UserDao userDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder, CompanionDao companionDao) {
         this.userDao = userDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = passwordEncoder;
         this.patientDao = patientDao;
+        this.companionDao = companionDao;
     }
 
     public List<User> findAll() {
@@ -112,6 +115,7 @@ public class UserService {
 
         RedisUser redisUser = (RedisUser) redisTemplate.opsForValue().get(userRedisKey);
 
+
         // 如果 Redis 中有用户信息，直接返回
         if (redisUser != null) {
             return Optional.of(getUserInfoFromRedis(redisUser, userId));
@@ -128,6 +132,8 @@ public class UserService {
         userDTO.setEmail(redisUser.getEmail());
         userDTO.setPhone(redisUser.getPhone());
         userDTO.setAvatar(redisUser.getAvatar());
+        userDTO.setDob(redisUser.getDob());
+        userDTO.setRole(redisUser.getRole().replaceFirst("ROLE_", "").toLowerCase());
 
         List<String> accountNames = new ArrayList<>();
         String keyPattern = "login_user:" + userId + ":account*";
@@ -149,7 +155,8 @@ public class UserService {
         userDTO.setEmail(user.getEmail());
         userDTO.setPhone(user.getPhone());
         userDTO.setAvatar(user.getAvatar());
-        userDTO.setRole(user.getRole().getRoleName());
+        userDTO.setDob(user.getDob());
+        userDTO.setRole(user.getRole().getRoleName().replaceFirst("ROLE_", "").toLowerCase());
         List<Account> accounts = user.getAccounts();
         for (Account account : accounts) {
             userDTO.getAccountName().add(account.getAccountName());

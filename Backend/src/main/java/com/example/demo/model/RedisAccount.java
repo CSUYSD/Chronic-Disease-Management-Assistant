@@ -13,13 +13,10 @@ import java.util.List;
 public class RedisAccount {
     private Long id;
     private String name;
-    private Double total_income;
-    private Double total_expense;
 
-    public RedisAccount(Long id, String name, Double total_income, Double total_expense) {
+
+    public RedisAccount(Long id, String name) {
         this.id = id;
         this.name = name;
-        this.total_income = total_income;
-        this.total_expense = total_expense;
     }
 }

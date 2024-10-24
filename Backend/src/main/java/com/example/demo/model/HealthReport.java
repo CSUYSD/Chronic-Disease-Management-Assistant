@@ -16,8 +16,7 @@ public class HealthReport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Lob
-    @Column(name = "content")
+    @Column(columnDefinition = "LONGTEXT")
     private String content;
 
     @JsonBackReference

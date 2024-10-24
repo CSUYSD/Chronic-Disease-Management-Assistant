@@ -16,7 +16,6 @@ import { useDispatch, useSelector } from 'react-redux'
 import { v4 as uuidv4 } from 'uuid'
 import { addChat, updateChat, deleteChat, setCurrentChatId } from '@/store/chatSlice'
 import { setUploadedFiles, removeUploadedFile, clearUploadedFiles } from '@/store/fileSlice'
-import { setReport, setReportStatus } from '@/store/reportSlice'
 import { AppDispatch, RootState } from '@/store'
 import { ErrorBoundary } from 'react-error-boundary'
 import AiResponseFormatter from '@/components/AiResponseFormatter'
@@ -65,7 +64,6 @@ export default function AiChatPage() {
     const currentChatId = useSelector((state: RootState) => state.chat.currentChatId)
     const currentChat = useSelector((state: RootState) => state.chat.chats.find(chat => chat.id === state.chat.currentChatId))
     const uploadedFiles = useSelector((state: RootState) => state.file.uploadedFiles)
-    const reportStatus = useSelector((state: RootState) => state.report.status)
 
     const [input, setInput] = useState('')
     const [isTyping, setIsTyping] = useState(false)
@@ -74,6 +72,8 @@ export default function AiChatPage() {
     const [, setIsCreatingNewChat] = useState(false)
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const [isUploading, setIsUploading] = useState(false)
+    const [report, setReport] = useState<{ content: string; generatedAt: string } | null>(null)
+    const [reportStatus, setReportStatus] = useState<'idle' | 'loading' | 'error'>('idle')
     const scrollAreaRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -86,8 +86,10 @@ export default function AiChatPage() {
     useEffect(() => {
         if (chats.length === 0) {
             createNewChat()
+        } else if (!currentChatId) {
+            dispatch(setCurrentChatId(chats[0].id))
         }
-    }, [chats])
+    }, [chats, currentChatId, dispatch])
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -256,8 +258,11 @@ export default function AiChatPage() {
 
     const deleteChatHandler = (id: string) => {
         dispatch(deleteChat(id))
-        if (currentChatId === id) {
-            dispatch(setCurrentChatId(chats[0]?.id || ''))
+        if (chats.length > 1) {
+            const newCurrentChatId = chats.find(chat => chat.id !== id)?.id || ''
+            dispatch(setCurrentChatId(newCurrentChatId))
+        } else {
+            createNewChat()
         }
     }
 
@@ -281,7 +286,7 @@ export default function AiChatPage() {
     }
 
     const generateReport = async () => {
-        dispatch(setReportStatus('loading'))
+        setReportStatus('loading')
         try {
             const response = await GenerateReportAPI()
             const reportContent = response.data
@@ -301,18 +306,18 @@ export default function AiChatPage() {
                 }))
             }
 
-            dispatch(setReport({
+            setReport({
                 content: reportContent,
                 generatedAt: new Date().toISOString()
-            }))
-            dispatch(setReportStatus('success'))
+            })
+            setReportStatus('idle')
             toast({
                 title: "Success",
                 description: "AI report generated successfully.",
             })
         } catch (error) {
             console.error('Error generating AI report:', error)
-            dispatch(setReportStatus('error'))
+            setReportStatus('error')
             toast({
                 title: "Error",
                 description: "Failed to generate AI report. Please try again.",
@@ -392,6 +397,7 @@ export default function AiChatPage() {
                         </AnimatePresence>
                     </ScrollArea>
                 </motion.aside>
+
                 <main className="flex-1 flex  flex-col relative">
                     <header className="bg-white shadow-sm p-4 flex items-center justify-between border-b border-gray-200">
                         <div className="flex items-center">

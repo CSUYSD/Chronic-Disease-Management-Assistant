@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.example.demo.repository.AccountDao;
 import com.example.demo.repository.CompanionDao;
 import com.example.demo.model.User;
 import com.example.demo.model.userimpl.Companion;
@@ -48,9 +49,10 @@ public class SecurityService {
     private final UserRoleDao userRoleDao;
     private final CompanionDao companionDao;
     private final PatientDao userDao;
+    private final AccountDao accountDao;
 
     @Autowired
-    public SecurityService(PasswordEncoder passwordEncoder, PatientDao patientDao, AuthenticationManager authenticationManager, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, UserRoleDao userRoleDao, CompanionDao companionDao, PatientDao userDao) {
+    public SecurityService(PasswordEncoder passwordEncoder, PatientDao patientDao, AuthenticationManager authenticationManager, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, UserRoleDao userRoleDao, CompanionDao companionDao, PatientDao userDao, AccountDao accountDao) {
         this.passwordEncoder = passwordEncoder;
         this.patientDao = patientDao;
         this.authenticationManager = authenticationManager;
@@ -59,6 +61,7 @@ public class SecurityService {
         this.userRoleDao = userRoleDao;
         this.companionDao = companionDao;
         this.userDao = userDao;
+        this.accountDao = accountDao;
     }
 
     @Transactional
@@ -86,9 +89,31 @@ public class SecurityService {
         user.setRole(userRole);
 
         if (user instanceof Patient) {
-            patientDao.save((Patient) user);
+            Patient patient = (Patient) user;
+            patientDao.save(patient);
+
+            // Create default accounts for the patient
+            createDefaultAccounts(patient);
         } else {
             companionDao.save((Companion) user);
+        }
+    }
+
+    private void createDefaultAccounts(Patient patient) {
+        List<String> defaultAccountNames = Arrays.asList("Hypertension", "Diabetes", "Cardiovascular Disease");
+
+        for (String accountName : defaultAccountNames) {
+            Account account = new Account();
+            account.setAccountName(accountName);
+            account.setPatient(patient);
+            accountDao.save(account);
+
+            // Add the new account to Redis
+            String newAccountKey = "login_user:" + patient.getId() + ":account:" + account.getId();
+            RedisAccount newRedisAccount = new RedisAccount(
+                    account.getId(),
+                    account.getAccountName());
+            redisTemplate.opsForValue().set(newAccountKey, newRedisAccount);
         }
     }
 
@@ -140,15 +165,13 @@ public class SecurityService {
         List<Account> accounts = patient.getAccounts();
 
         // 存储账户信息到 Redis
-        List<Long> accountIds = accounts.stream().map(Account::getId).collect(Collectors.toList());
+        List<Long> accountIds = accounts.stream().map(Account::getId).toList();
 
         for (Account account : accounts) {
             String redisAccountKey = "login_user:" + patient.getId() + ":account:" + account.getId();
             RedisAccount redisAccount = new RedisAccount(
                     account.getId(),
-                    account.getAccountName(),
-                    account.getTotalIncome(),
-                    account.getTotalExpense()
+                    account.getAccountName()
             );
             redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
         }
@@ -161,6 +184,8 @@ public class SecurityService {
                 user.getEmail(),
                 user.getPhone(),
                 user.getAvatar(),
+                user.getDob(),  // 假设 User 类有 getDob() 方法
+                user.getRole().getRoleName(),
                 token
         );
 
