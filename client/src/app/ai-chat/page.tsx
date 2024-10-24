@@ -2,9 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useDispatch, useSelector } from 'react-redux'
-import { v4 as uuidv4 } from 'uuid'
-import { format } from 'date-fns'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -14,19 +11,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
-import MarkdownRenderer from '@/utils/markdown-renderer'
 import { FluxMessageWithHistoryAPI, UploadFileAPI, ChatWithFileAPI, ClearFileAPI, ClearFileByFileName, GenerateReportAPI } from '@/api/ai'
-import { AppDispatch, RootState } from '@/store'
+import { useDispatch, useSelector } from 'react-redux'
+import { v4 as uuidv4 } from 'uuid'
 import { addChat, updateChat, deleteChat, setCurrentChatId } from '@/store/chatSlice'
 import { setUploadedFiles, removeUploadedFile, clearUploadedFiles } from '@/store/fileSlice'
+import { AppDispatch, RootState } from '@/store'
 import { ErrorBoundary } from 'react-error-boundary'
+import AiResponseFormatter from '@/components/AiResponseFormatter'
 
 interface Message {
     id: number
     text: string
     sender: 'user' | 'ai'
-    isReport?: boolean
-    timestamp: string
 }
 
 interface Chat {
@@ -72,13 +69,19 @@ export default function AiChatPage() {
     const [isTyping, setIsTyping] = useState(false)
     const [isRenaming, setIsRenaming] = useState(false)
     const [newChatName, setNewChatName] = useState('')
+    const [, setIsCreatingNewChat] = useState(false)
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const [isUploading, setIsUploading] = useState(false)
+    const [, setReport] = useState<{ content: string; generatedAt: string } | null>(null)
     const [reportStatus, setReportStatus] = useState<'idle' | 'loading' | 'error'>('idle')
-    const [, setAiReplyWidth] = useState(0)
     const scrollAreaRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const aiReplyRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (scrollAreaRef.current) {
+            scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
+        }
+    }, [chats])
 
     useEffect(() => {
         if (chats.length === 0) {
@@ -88,25 +91,6 @@ export default function AiChatPage() {
         }
     }, [chats, currentChatId, dispatch])
 
-    useEffect(() => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
-        }
-    }, [currentChat?.messages])
-
-    useEffect(() => {
-        const updateWidth = () => {
-            if (aiReplyRef.current) {
-                setAiReplyWidth(aiReplyRef.current.offsetWidth)
-            }
-        }
-
-        updateWidth()
-        window.addEventListener('resize', updateWidth)
-
-        return () => window.removeEventListener('resize', updateWidth)
-    }, [])
-
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         if (!input.trim() || !currentChat) return
@@ -115,7 +99,6 @@ export default function AiChatPage() {
             id: Date.now(),
             text: input,
             sender: 'user',
-            timestamp: new Date().toISOString(),
         }
 
         dispatch(updateChat({
@@ -146,8 +129,7 @@ export default function AiChatPage() {
             const newAiMessage: Message = {
                 id: Date.now(),
                 text: aiResponse,
-                sender: 'ai',
-                timestamp: new Date().toISOString(),
+                sender: 'ai'
             }
 
             dispatch(updateChat({
@@ -157,12 +139,12 @@ export default function AiChatPage() {
                 }
             }))
         } catch (error) {
-            console.error('Error getting AI response:', error)
+            console.error('Error getting AI response:', error);
             toast({
                 title: "Error",
                 description: `Failed to get response from AI: ${(error as Error).message || 'Unknown error'}`,
                 variant: "destructive",
-            })
+            });
         } finally {
             setIsTyping(false)
         }
@@ -271,6 +253,7 @@ export default function AiChatPage() {
         }
         dispatch(addChat(newChat))
         dispatch(setCurrentChatId(newChatId))
+        setIsCreatingNewChat(false)
     }
 
     const deleteChatHandler = (id: string) => {
@@ -312,9 +295,7 @@ export default function AiChatPage() {
                 const newAiMessage: Message = {
                     id: Date.now(),
                     text: reportContent,
-                    sender: 'ai',
-                    isReport: true,
-                    timestamp: new Date().toISOString(),
+                    sender: 'ai'
                 }
 
                 dispatch(updateChat({
@@ -325,6 +306,10 @@ export default function AiChatPage() {
                 }))
             }
 
+            setReport({
+                content: reportContent,
+                generatedAt: new Date().toISOString()
+            })
             setReportStatus('idle')
             toast({
                 title: "Success",
@@ -397,7 +382,6 @@ export default function AiChatPage() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="w-40">
                                                 <DropdownMenuItem onClick={() => startRenaming(chat)}>
-
                                                     <Edit2 className="w-4 h-4 mr-2" />
                                                     Rename
                                                 </DropdownMenuItem>
@@ -414,7 +398,7 @@ export default function AiChatPage() {
                     </ScrollArea>
                 </motion.aside>
 
-                <main className="flex-1 flex flex-col relative">
+                <main className="flex-1 flex  flex-col relative">
                     <header className="bg-white shadow-sm p-4 flex items-center justify-between border-b border-gray-200">
                         <div className="flex items-center">
                             <Button variant="ghost" size="sm" onClick={toggleSidebar} className="mr-2">
@@ -425,20 +409,18 @@ export default function AiChatPage() {
                                 AI Chat Assistant
                             </h1>
                         </div>
-                        <div className="flex items-center space-x-4">
-                            <Button
-                                onClick={generateReport}
-                                disabled={reportStatus === 'loading'}
-                                className="bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200"
-                            >
-                                {reportStatus === 'loading' ? (
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                ) : (
-                                    <FileText className="w-4 h-4 mr-2" />
-                                )}
-                                Generate AI Report
-                            </Button>
-                        </div>
+                        <Button
+                            onClick={generateReport}
+                            disabled={reportStatus === 'loading'}
+                            className="bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200"
+                        >
+                            {reportStatus === 'loading' ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <FileText className="w-4 h-4 mr-2" />
+                            )}
+                            Generate AI Report
+                        </Button>
                     </header>
                     <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
                         <AnimatePresence>
@@ -456,31 +438,13 @@ export default function AiChatPage() {
                                             {message.sender === 'user' ? <User className="w-5 h-5 text-gray-600" /> : <Bot className="w-5 h-5 text-gray-600" />}
                                         </div>
                                         <motion.div
-                                            ref={message.sender === 'ai' ? aiReplyRef : null}
                                             className={`p-3 rounded-lg ${message.sender === 'user' ? 'bg-gray-100 text-gray-900' : 'bg-white border border-gray-200 text-gray-900'}`}
-                                            style={{ width: message.sender === 'ai' ? '70%' : 'auto', maxWidth: '70%' }}
+                                            style={{ maxWidth: '70%' }}
                                             initial={{ scale: 0.8, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
                                             transition={{ duration: 0.3, delay: index * 0.1 }}
                                         >
-                                            {message.isReport ? (
-                                                <div className="max-w-3xl overflow-x-hidden">
-                                                    <MarkdownRenderer
-                                                        content={message.text}
-                                                        className="prose prose-sm max-w-none dark:prose-invert
-                                                                  prose-headings:text-gray-900
-                                                                  prose-p:text-gray-700
-                                                                  prose-strong:text-gray-900
-                                                                  prose-code:text-gray-800
-                                                                  prose-pre:bg-gray-50"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div className="whitespace-pre-wrap break-words">{message.text}</div>
-                                            )}
-                                            <div className="text-xs mt-1 text-gray-500">
-                                                {format(new Date(message.timestamp), 'HH:mm')}
-                                            </div>
+                                            <AiResponseFormatter text={message.text} />
                                         </motion.div>
                                     </div>
                                 </motion.div>
@@ -559,7 +523,7 @@ export default function AiChatPage() {
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 <AnimatePresence>
-                                    {uploadedFiles.map((file, index) => (
+                                    {uploadedFiles.map((file,) => (
                                         <motion.div
                                             key={file.name}
                                             initial={{ opacity: 0, scale: 0.8 }}

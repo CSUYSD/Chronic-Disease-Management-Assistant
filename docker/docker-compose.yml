@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 name: healthCare-ai
 
@@ -14,8 +14,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      redis-stack:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     environment:
@@ -27,9 +25,6 @@ services:
       - SPRING_DATA_REDIS_PORT=6379
       - SPRING_DATA_ELASTICSEARCH_URIS=http://localhost:9200
       - SPRING_RABBITMQ_HOST=localhost
-      - REDIS_STACK_HOST=localhost
-      - REDIS_STACK_PORT=6380
-      - REDIS_STACK_PASSWORD=123456
     network_mode: host
 
   frontend:
@@ -38,7 +33,8 @@ services:
       - "3000:3000"
     depends_on:
       - backend
-    network_mode: host
+    environment:
+      - HOST=0.0.0.0
 
   mysql:
     image: mysql:8.0
@@ -68,20 +64,6 @@ services:
       retries: 5
     network_mode: host
 
-  redis-stack:
-    image: redis/redis-stack:latest
-    volumes:
-      - ./data/redis-stack:/data
-    ports:
-      - "6380:6379"
-    environment:
-      - REDIS_ARGS=--requirepass 123456
-    healthcheck:
-      test: ["CMD", "redis-cli", "-h", "localhost", "-p", "6379", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-    network_mode: host
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
@@ -126,6 +108,5 @@ services:
 volumes:
   mysql_data:
   redis_data:
-  redis_stack_data:
   elasticsearch_data:
   rabbitmq_data:
