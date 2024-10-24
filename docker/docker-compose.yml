@@ -35,6 +35,7 @@ services:
       - backend
     environment:
       - HOST=0.0.0.0
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
 
   mysql:
     image: mysql:8.0
