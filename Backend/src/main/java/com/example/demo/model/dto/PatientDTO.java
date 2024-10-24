@@ -1,5 +1,6 @@
 package com.example.demo.model.dto;
 
+import com.example.demo.model.Account;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -14,5 +15,5 @@ public class PatientDTO {
     private LocalDate dob;
     private String avatar;
     private String selectedAccountName;
-    private List<HealthRecordDTO> healthRecords;
+    private List<Account> accounts;
 }

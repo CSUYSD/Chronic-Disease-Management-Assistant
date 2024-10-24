@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import com.example.demo.model.userimpl.Companion;
+import com.example.demo.repository.CompanionDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,17 +33,18 @@ public class UserService {
     private final UserDao userDao;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
-
     private final PasswordEncoder passwordEncoder;
     private final PatientDao patientDao;
+    private final CompanionDao companionDao;
 
     @Autowired
-    public UserService(PatientDao patientDao, UserDao userDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder) {
+    public UserService(PatientDao patientDao, UserDao userDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder, CompanionDao companionDao) {
         this.userDao = userDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = passwordEncoder;
         this.patientDao = patientDao;
+        this.companionDao = companionDao;
     }
 
     public List<User> findAll() {

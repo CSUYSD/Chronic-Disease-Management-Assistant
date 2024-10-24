@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import com.example.demo.model.HealthRecord;
+import com.example.demo.model.dto.HealthRecordDTO;
 import com.example.demo.repository.CompanionDao;
 import com.example.demo.repository.PatientDao;
 import com.example.demo.model.Account;
@@ -11,8 +13,10 @@ import com.example.demo.utility.converter.HealthRecordConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -28,6 +32,8 @@ public class CompanionService {
     private final GetCurrentUserInfo getCurrentUserInfo;
     private final CompanionDao companionDao;
     private final PatientDao patientDao;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final HealthRecordService healthRecordService;
 
     /**
      * 构造函数，用于依赖注入。
@@ -36,10 +42,12 @@ public class CompanionService {
      * @param companionDao 陪护人员数据访问对象
      */
     @Autowired
-    public CompanionService(PatientDao patientDao, GetCurrentUserInfo getCurrentUserInfo, CompanionDao companionDao) {
+    public CompanionService(PatientDao patientDao, GetCurrentUserInfo getCurrentUserInfo, CompanionDao companionDao, StringRedisTemplate stringRedisTemplate, HealthRecordService healthRecordService) {
         this.getCurrentUserInfo = getCurrentUserInfo;
         this.companionDao = companionDao;
         this.patientDao = patientDao;
+        this.stringRedisTemplate = stringRedisTemplate;
+        this.healthRecordService = healthRecordService;
     }
 
     /**
@@ -104,31 +112,22 @@ public class CompanionService {
         dto.setPhone(patient.getPhone());
         dto.setDob(patient.getDob());
         dto.setAvatar(patient.getAvatar());
-
-        /// 设置默认accountId为1
-        Long accountId = 1L;
-
-        if (patient.getAccounts() != null) {
-            patient.getAccounts().stream()
-                    .filter(account -> account.getId().equals(accountId))
-                    .findFirst()
-                    .ifPresent(selectedAccount -> setSelectedAccountInfo(dto, selectedAccount));
-        }
-
+        List<Account> accounts = patient.getAccounts();
+        dto.setAccounts(accounts);
         return dto;
     }
 
-    /**
-     * 设置选定账户的信息到PatientDTO中。
-     * @param dto PatientDTO对象
-     * @param selectedAccount 选定的账户
-     */
-    private void setSelectedAccountInfo(PatientDTO dto, Account selectedAccount) {
-        dto.setSelectedAccountName(selectedAccount.getAccountName());
-        if (selectedAccount.getHealthRecords() != null) {
-            dto.setHealthRecords(selectedAccount.getHealthRecords().stream()
-                    .map(HealthRecordConverter::toHealthRecordDTO)
-                    .collect(Collectors.toList()));
-        }
+    public List<HealthRecordDTO> getAllRecordsForCompanion(String token) {
+        Long companionId = getCurrentUserInfo.getCurrentUserId(token);
+        Patient patient = getPatientByCompanionId(companionId);
+        Long userId = patient.getId();
+        String pattern = "login_user:" + userId + ":current_account";
+        String accountId = stringRedisTemplate.opsForValue().get(pattern);
+        List<HealthRecord> healthRecords = healthRecordService.getAllRecordsByAccountId(Long.valueOf(accountId));
+        return healthRecords.stream().map(HealthRecordConverter::toHealthRecordDTO).collect(Collectors.toList());
+    }
+
+    public Patient getPatientByCompanionId(Long companionId) {
+        return companionDao.findById(companionId).map(Companion::getPatient).orElse(null);
     }
 }

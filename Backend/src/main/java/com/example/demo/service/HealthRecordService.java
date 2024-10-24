@@ -105,4 +105,5 @@ public class HealthRecordService {
                 .map(HealthRecordConverter::toHealthRecordDTO)
                 .collect(Collectors.toList());
     }
+
 }
