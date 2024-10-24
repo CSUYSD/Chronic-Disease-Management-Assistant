@@ -126,7 +126,7 @@ public class CompanionService {
         Long companionId = getCurrentUserInfo.getCurrentUserId(token);
         Patient patient = getPatientByCompanionId(companionId);
         Long userId = patient.getId();
-        Optional<Long> accountId = accountDao.findAccountIdByAccountNameAndPatientId(accountName, userId);
+        Long accountId = accountDao.findAccountIdByAccountNameAndPatientId(accountName, userId);
         List<HealthRecord> healthRecords = healthRecordService.getAllRecordsByAccountId(accountId);
         return healthRecords.stream().map(HealthRecordConverter::toHealthRecordDTO).collect(Collectors.toList());
     }
