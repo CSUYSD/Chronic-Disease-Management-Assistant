@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.model.HealthRecord;
 import com.example.demo.model.dto.HealthRecordDTO;
+import com.example.demo.repository.AccountDao;
 import com.example.demo.repository.CompanionDao;
 import com.example.demo.repository.PatientDao;
 import com.example.demo.model.Account;
@@ -17,6 +18,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 /**
@@ -34,6 +37,7 @@ public class CompanionService {
     private final PatientDao patientDao;
     private final StringRedisTemplate stringRedisTemplate;
     private final HealthRecordService healthRecordService;
+    private final AccountDao accountDao;
 
     /**
      * 构造函数，用于依赖注入。
@@ -42,12 +46,13 @@ public class CompanionService {
      * @param companionDao 陪护人员数据访问对象
      */
     @Autowired
-    public CompanionService(PatientDao patientDao, GetCurrentUserInfo getCurrentUserInfo, CompanionDao companionDao, StringRedisTemplate stringRedisTemplate, HealthRecordService healthRecordService) {
+    public CompanionService(PatientDao patientDao, GetCurrentUserInfo getCurrentUserInfo, CompanionDao companionDao, StringRedisTemplate stringRedisTemplate, HealthRecordService healthRecordService, AccountDao accountDao) {
         this.getCurrentUserInfo = getCurrentUserInfo;
         this.companionDao = companionDao;
         this.patientDao = patientDao;
         this.stringRedisTemplate = stringRedisTemplate;
         this.healthRecordService = healthRecordService;
+        this.accountDao = accountDao;
     }
 
     /**
@@ -117,13 +122,12 @@ public class CompanionService {
         return dto;
     }
 
-    public List<HealthRecordDTO> getAllRecordsForCompanion(String token) {
+    public List<HealthRecordDTO> getAllRecordsForCompanion(String token, String accountName) {
         Long companionId = getCurrentUserInfo.getCurrentUserId(token);
         Patient patient = getPatientByCompanionId(companionId);
         Long userId = patient.getId();
-        String pattern = "login_user:" + userId + ":current_account";
-        String accountId = stringRedisTemplate.opsForValue().get(pattern);
-        List<HealthRecord> healthRecords = healthRecordService.getAllRecordsByAccountId(Long.valueOf(accountId));
+        Optional<Long> accountId = accountDao.findAccountIdByAccountNameAndPatientId(accountName, userId);
+        List<HealthRecord> healthRecords = healthRecordService.getAllRecordsByAccountId(accountId);
         return healthRecords.stream().map(HealthRecordConverter::toHealthRecordDTO).collect(Collectors.toList());
     }
 

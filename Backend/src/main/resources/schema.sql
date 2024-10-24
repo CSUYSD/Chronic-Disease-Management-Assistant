@@ -7,7 +7,7 @@
 -- DROP TABLE IF EXISTS health_records;
 -- DROP TABLE IF EXISTS account;
 -- DROP TABLE IF EXISTS companion;
--- DROP TABLE IF EXISTS patient;
+-- DROP TABLE IF EXISTS patient;s
 -- DROP TABLE IF EXISTS users;
 -- DROP TABLE IF EXISTS user_roles;
 --
