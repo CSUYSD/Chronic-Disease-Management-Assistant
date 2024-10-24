@@ -49,7 +49,7 @@ public class HealthRecordService {
         this.ESHealthRecordService = ESHealthRecordService;
     }
 
-    public List<HealthRecord> getAllRecordsByAccountId(Optional<Long> accountId) {
+    public List<HealthRecord> getAllRecordsByAccountId(Long accountId) {
         return recordDao.findAllByAccountId(accountId);
     }
 

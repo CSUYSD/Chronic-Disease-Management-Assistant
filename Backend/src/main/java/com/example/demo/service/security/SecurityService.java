@@ -106,17 +106,13 @@ public class SecurityService {
             Account account = new Account();
             account.setAccountName(accountName);
             account.setPatient(patient);
-            account.setTotalIncome(0.0);
-            account.setTotalExpense(0.0);
             accountDao.save(account);
 
             // Add the new account to Redis
             String newAccountKey = "login_user:" + patient.getId() + ":account:" + account.getId();
             RedisAccount newRedisAccount = new RedisAccount(
                     account.getId(),
-                    account.getAccountName(),
-                    account.getTotalIncome(),
-                    account.getTotalExpense());
+                    account.getAccountName());
             redisTemplate.opsForValue().set(newAccountKey, newRedisAccount);
         }
     }
@@ -175,9 +171,7 @@ public class SecurityService {
             String redisAccountKey = "login_user:" + patient.getId() + ":account:" + account.getId();
             RedisAccount redisAccount = new RedisAccount(
                     account.getId(),
-                    account.getAccountName(),
-                    account.getTotalIncome(),
-                    account.getTotalExpense()
+                    account.getAccountName()
             );
             redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
         }
