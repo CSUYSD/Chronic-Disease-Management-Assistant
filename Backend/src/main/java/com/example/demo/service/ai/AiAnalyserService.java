@@ -4,7 +4,7 @@ import com.example.demo.model.HealthReport;
 import com.example.demo.model.dto.HealthRecordDTO;
 import com.example.demo.model.userimpl.Patient;
 import com.example.demo.repository.HealthReportRepository;
-import com.example.demo.service.RecordService;
+import com.example.demo.service.HealthRecordService;
 import com.example.demo.service.rabbitmq.RabbitMQService;
 import com.example.demo.utility.converter.PromptConverter;
 import com.example.demo.utility.jwt.JwtUtil;
@@ -35,18 +35,18 @@ public class AiAnalyserService {
     public final JwtUtil jwtUtil;
     public final GetCurrentUserInfo getCurrentUserInfo;
     public final ChromaVectorStore vectorStore;
-    public final RecordService recordService;
+    public final HealthRecordService healthRecordService;
     public final PromptManager promptManager;
     private final RabbitMQService rabbitMQService;
     private final HealthReportRepository healthReportRepository;
 
     @Autowired
-    public AiAnalyserService(OpenAiChatModel openAiChatModel, JwtUtil jwtUtil, GetCurrentUserInfo getCurrentUserInfo, ChromaVectorStore vectorStore, RecordService recordService, PromptManager promptManager, RabbitMQService rabbitMQService, HealthReportRepository healthReportRepository) {
+    public AiAnalyserService(OpenAiChatModel openAiChatModel, JwtUtil jwtUtil, GetCurrentUserInfo getCurrentUserInfo, ChromaVectorStore vectorStore, HealthRecordService healthRecordService, PromptManager promptManager, RabbitMQService rabbitMQService, HealthReportRepository healthReportRepository) {
         this.openAiChatModel = openAiChatModel;
         this.jwtUtil = jwtUtil;
         this.getCurrentUserInfo = getCurrentUserInfo;
         this.vectorStore = vectorStore;
-        this.recordService = recordService;
+        this.healthRecordService = healthRecordService;
         this.promptManager = promptManager;
         this.rabbitMQService = rabbitMQService;
         this.healthReportRepository = healthReportRepository;
@@ -80,7 +80,7 @@ public class AiAnalyserService {
 public String generateOverAllHealthReport(String token) {
     Long userId = getCurrentUserInfo.getCurrentUserId(token);
     Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
-    List<HealthRecordDTO> records = recordService.getCertainDaysRecords(accountId, 10);
+    List<HealthRecordDTO> records = healthRecordService.getCertainDaysRecords(accountId, 10);
     String recentRecords = PromptConverter.parseRecentHealthRecordsToPrompt(records);
 
     String context = promptManager.getHealthReportPrompt(recentRecords);

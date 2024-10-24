@@ -127,28 +127,6 @@ public class UserController {
     }
 
 
-    @PostMapping("/rabbit")
-    public String testRabbitMQ(@RequestBody String message) {
-        rabbitMQProducer.sendMessage(message);
-        return message;
-    }
-
-    @GetMapping("/companion/patientInfo")
-    public ResponseEntity<PatientDTO> getPatientInfo(@RequestHeader("Authorization") String token) {
-        try {
-            PatientDTO patientDTO = companionService.getPatientDTOForCompanion(token);
-
-            if (patientDTO == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-            }
-
-            return ResponseEntity.ok(patientDTO);
-
-        } catch (Exception e) {
-            logger.error("Error getting patient info for companion", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
 
     @GetMapping("/randomString")
     public ResponseEntity<String> getRandomString(@RequestHeader("Authorization") String token) {
@@ -164,18 +142,6 @@ public class UserController {
         }
     }
 
-    @PostMapping("/bindCompanion")
-    public ResponseEntity<String> bindPatient(@RequestHeader("Authorization") String token, @RequestBody Map<String, String> requestBody) {
 
-        Long companionId = getCurrentUserInfo.getCurrentUserId(token);
-        String randomString = requestBody.get("randomString");
-
-        boolean success = companionService.bindCompanionToPatient(companionId, randomString);
-        if (success) {
-            return ResponseEntity.ok("Companion bound to patient successfully");
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to bind companion to patient");
-        }
-    }
 
 }
