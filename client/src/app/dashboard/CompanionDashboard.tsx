@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { UserPlus, Activity, Bot, Calendar, Mail, Phone, Heart, Droplet, Stethoscope, Droplets, ChevronDown, ChevronUp } from "lucide-react"
-import { BindPatientAPI, GetPatientInfo } from "@/api/companion"
+import { BindPatientAPI, GetPatientInfo, GetPatientRecords } from "@/api/companion"
 import { toast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { GetReportAPI } from "@/api/ai"
@@ -26,6 +26,12 @@ interface HealthRecord {
     description: string
 }
 
+interface Account {
+    id: number
+    name: string
+    // Add other account properties as needed
+}
+
 interface PatientDTO {
     id: number
     username: string
@@ -34,7 +40,7 @@ interface PatientDTO {
     dob: string
     avatar: string | null
     selectedAccountName: string
-    healthRecords: HealthRecord[]
+    accounts: Account[]
 }
 
 interface HealthReport {
@@ -71,6 +77,8 @@ export default function CompanionDashboard() {
     const [report, setReport] = useState<HealthReport | null>(null)
     const [reportStatus, setReportStatus] = useState<'idle' | 'loading' | 'error'>('idle')
     const [isReportExpanded, setIsReportExpanded] = useState(false)
+    const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
+    const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([])
 
     useEffect(() => {
         fetchPatientInfo()
@@ -81,6 +89,10 @@ export default function CompanionDashboard() {
             const response = await GetPatientInfo()
             if (response.status === 200) {
                 setPatient(response.data)
+                if (response.data.accounts.length > 0) {
+                    setSelectedAccount(response.data.accounts[0])
+                    fetchPatientRecords(response.data.accounts[0].name)
+                }
                 fetchHealthReport()
             }
         } catch (error: any) {
@@ -99,11 +111,27 @@ export default function CompanionDashboard() {
         }
     }
 
+    const fetchPatientRecords = async (accountName: string) => {
+        try {
+            const response = await GetPatientRecords(accountName)
+            if (response.status === 200) {
+                setHealthRecords(response.data)
+            }
+        } catch (error) {
+            console.error('Failed to fetch patient records:', error)
+            toast({
+                title: "Error",
+                description: "Failed to fetch patient records. Please try again later.",
+                variant: "destructive",
+            })
+        }
+    }
+
     const handleBindPatient = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         setLoading(true)
         try {
-            const response = await BindPatientAPI({ randomString: bindingCode })
+            const response = await BindPatientAPI(bindingCode)
             if (response.status === 200) {
                 toast({
                     title: "Success",
@@ -220,7 +248,7 @@ export default function CompanionDashboard() {
         )
     }
 
-    const groupedHealthRecords = groupHealthRecordsByDate(patient.healthRecords)
+    const groupedHealthRecords = groupHealthRecordsByDate(healthRecords)
 
     return (
         <div className="space-y-6">
@@ -251,7 +279,7 @@ export default function CompanionDashboard() {
                                 </Avatar>
                                 <div>
                                     <h2 className="text-2xl font-bold">{patient.username}</h2>
-                                    <p className="text-muted-foreground">{patient.selectedAccountName}</p>
+                                    <p className="text-muted-foreground">Selected Account: {patient.selectedAccountName}</p>
                                 </div>
                             </motion.div>
                             <motion.div
@@ -270,9 +298,28 @@ export default function CompanionDashboard() {
                 <TabsContent value="health-records">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <Activity className="mr-2 h-5 w-5 text-green-500" />
-                                Health Records
+                            <CardTitle className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <Activity className="mr-2 h-5 w-5 text-green-500" />
+                                    Health Records
+                                </div>
+                                <select
+                                    value={selectedAccount?.id || ''}
+                                    onChange={(e) => {
+                                        const account = patient.accounts.find(acc => acc.id.toString() === e.target.value)
+                                        if (account) {
+                                            setSelectedAccount(account)
+                                            fetchPatientRecords(account.name)
+                                        }
+                                    }}
+                                    className="border rounded p-2"
+                                >
+                                    {patient.accounts.map((account) => (
+                                        <option key={account.id} value={account.id}>
+                                            {account.name}
+                                        </option>
+                                    ))}
+                                </select>
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -303,7 +350,7 @@ export default function CompanionDashboard() {
                                         </Collapsible>
                                     ))
                                 ) : (
-                                    <p>No health records available.</p>
+                                    <p>No health records available for the selected account.</p>
                                 )}
                             </ScrollArea>
                         </CardContent>
@@ -323,6 +370,7 @@ export default function CompanionDashboard() {
                                     onClick={() => setIsReportExpanded(!isReportExpanded)}
                                 >
                                     {isReportExpanded ? (
+
                                         <>
                                             <ChevronUp className="h-4 w-4 mr-2" />
                                             Collapse
@@ -358,7 +406,7 @@ export default function CompanionDashboard() {
                                     )}
                                     {report.generatedAt && (
                                         <p className="text-sm text-gray-500 mt-4">
-                                            Generated  at: {new Date(report.generatedAt).toLocaleString()}
+                                            Generated at: {new Date(report.generatedAt).toLocaleString()}
                                         </p>
                                     )}
                                 </div>

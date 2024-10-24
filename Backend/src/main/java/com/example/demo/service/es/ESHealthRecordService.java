@@ -16,13 +16,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class HealthRecordService {
+public class ESHealthRecordService {
 
     private final HealthRecordESRepository healthRecordESRepository;
     private final ElasticsearchOperations elasticsearchOperations;
     private final GetCurrentUserInfo getCurrentUserInfo;
 
-    public HealthRecordService(HealthRecordESRepository healthRecordESRepository, ElasticsearchOperations elasticsearchOperations, GetCurrentUserInfo getCurrentUserInfo) {
+    public ESHealthRecordService(HealthRecordESRepository healthRecordESRepository, ElasticsearchOperations elasticsearchOperations, GetCurrentUserInfo getCurrentUserInfo) {
         this.healthRecordESRepository = healthRecordESRepository;
         this.elasticsearchOperations = elasticsearchOperations;
         this.getCurrentUserInfo = getCurrentUserInfo;

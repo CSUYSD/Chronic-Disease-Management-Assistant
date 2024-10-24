@@ -83,7 +83,7 @@ public class HealthRecordService {
         HealthRecordConverter.updateHealthRecordFromDTO(existingRecord, healthRecordDTO);
         recordDao.save(existingRecord);
 //       update health record to elastic search
-        healthRecordService.syncHealthRecord(existingRecord);
+        ESHealthRecordService.syncHealthRecord(existingRecord);
     }
 
     public void deleteHealthRecord(Long id) {
@@ -91,7 +91,7 @@ public class HealthRecordService {
                 .orElseThrow(() -> new RuntimeException("Health record not found for id: " + id));
         recordDao.delete(record);
 //      delete health record from elastic search
-        healthRecordService.deleteHealthRecord(id);
+        ESHealthRecordService.deleteHealthRecord(id);
     }
 
     @Transactional
@@ -102,7 +102,7 @@ public class HealthRecordService {
         }
         recordDao.deleteAll(records);
 //      delete health records in batch from elastic search
-        healthRecordService.deleteHealthRecords(recordIds);
+        ESHealthRecordService.deleteHealthRecords(recordIds);
     }
 
     public List<HealthRecordDTO> getCertainDaysRecords(Long accountId, Integer duration) {
