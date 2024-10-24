@@ -27,8 +27,9 @@ interface HealthRecord {
 }
 
 interface Account {
-    id: number
     name: string
+    total_income: number | null
+    total_expense: number | null
 }
 
 interface PatientDTO {
@@ -38,7 +39,7 @@ interface PatientDTO {
     phone: string
     dob: string
     avatar: string | null
-    selectedAccountName: string
+    selectedAccountName: string | null
     accounts: Account[]
 }
 
@@ -73,10 +74,11 @@ export default function CompanionDashboard() {
     const [patient, setPatient] = useState<PatientDTO | null>(null)
     const [bindingCode, setBindingCode] = useState('')
     const [loading, setLoading] = useState(true)
+    const [recordsLoading, setRecordsLoading] = useState(false)
     const [report, setReport] = useState<HealthReport | null>(null)
     const [reportStatus, setReportStatus] = useState<'idle' | 'loading' | 'error'>('idle')
     const [isReportExpanded, setIsReportExpanded] = useState(false)
-    const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
+    const [selectedDisease, setSelectedDisease] = useState<string | null>(null)
     const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([])
 
     useEffect(() => {
@@ -89,7 +91,8 @@ export default function CompanionDashboard() {
             if (response.status === 200) {
                 setPatient(response.data)
                 if (response.data.accounts.length > 0) {
-                    setSelectedAccount(response.data.accounts[0])
+                    setSelectedDisease(response.data.accounts[0].name)
+                    fetchPatientRecords(response.data.accounts[0].name)
                 }
                 fetchHealthReport()
             }
@@ -110,9 +113,10 @@ export default function CompanionDashboard() {
     }
 
     const fetchPatientRecords = async (accountName: string) => {
-        setLoading(true)
+        setRecordsLoading(true)
         try {
             const response = await GetPatientRecords(accountName)
+            console.log("sending accountName: ", accountName)
             if (response.status === 200) {
                 setHealthRecords(response.data)
             }
@@ -123,8 +127,9 @@ export default function CompanionDashboard() {
                 description: "Failed to fetch patient records. Please try again later.",
                 variant: "destructive",
             })
+            setHealthRecords([])
         } finally {
-            setLoading(false)
+            setRecordsLoading(false)
         }
     }
 
@@ -280,7 +285,9 @@ export default function CompanionDashboard() {
                                 </Avatar>
                                 <div>
                                     <h2 className="text-2xl font-bold">{patient.username}</h2>
-                                    <p className="text-muted-foreground">Selected Account: {patient.selectedAccountName}</p>
+                                    <p className="text-muted-foreground">
+                                        Diseases: {patient.accounts.map(account => account.name).join(', ')}
+                                    </p>
                                 </div>
                             </motion.div>
                             <motion.div
@@ -306,14 +313,14 @@ export default function CompanionDashboard() {
                         </CardHeader>
                         <CardContent>
                             <div className="mb-4">
-                                <h3 className="text-lg font-semibold mb-2">Select an Account</h3>
+                                <h3 className="text-lg font-semibold mb-2">Select a Disease</h3>
                                 <div className="flex flex-wrap gap-2">
                                     {patient.accounts.map((account) => (
                                         <Button
-                                            key={account.id}
-                                            variant={selectedAccount?.id === account.id ? "default" : "outline"}
+                                            key={account.name}
+                                            variant={selectedDisease === account.name ? "default" : "outline"}
                                             onClick={() => {
-                                                setSelectedAccount(account)
+                                                setSelectedDisease(account.name)
                                                 fetchPatientRecords(account.name)
                                             }}
                                         >
@@ -323,7 +330,15 @@ export default function CompanionDashboard() {
                                 </div>
                             </div>
                             <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                                {selectedAccount ? (
+                                {recordsLoading ? (
+                                    <div className="flex justify-center items-center h-full">
+                                        <motion.div
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                            className="w-8 h-8 border-t-2 border-blue-500 rounded-full"
+                                        />
+                                    </div>
+                                ) : selectedDisease ? (
                                     groupedHealthRecords.length > 0 ? (
                                         groupedHealthRecords.map(([date, records]) => (
                                             <Collapsible
@@ -350,10 +365,11 @@ export default function CompanionDashboard() {
                                             </Collapsible>
                                         ))
                                     ) : (
-                                        <p>No health records available for the selected account.</p>
+                                        <p>No health records available for the selected disease.</p>
                                     )
                                 ) : (
-                                    <p>Please select an account to view health records.</p>
+
+                                    <p>Please select a disease to view health records.</p>
                                 )}
                             </ScrollArea>
                         </CardContent>
@@ -374,7 +390,6 @@ export default function CompanionDashboard() {
                                 >
                                     {isReportExpanded ? (
                                         <>
-
                                             <ChevronUp className="h-4 w-4 mr-2" />
                                             Collapse
                                         </>

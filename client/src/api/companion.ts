@@ -23,6 +23,9 @@ export function GetPatientInfo() {
 export function GetPatientRecords(accountName: string) {
     return request ({
         url: "/companion/bind-patient-records",
-        method: "GET"
+        method: "GET",
+        params: {
+            accountName: accountName
+        }
     })
 }
