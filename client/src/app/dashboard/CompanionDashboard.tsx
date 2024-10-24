@@ -29,7 +29,6 @@ interface HealthRecord {
 interface Account {
     id: number
     name: string
-    // Add other account properties as needed
 }
 
 interface PatientDTO {
@@ -91,7 +90,6 @@ export default function CompanionDashboard() {
                 setPatient(response.data)
                 if (response.data.accounts.length > 0) {
                     setSelectedAccount(response.data.accounts[0])
-                    fetchPatientRecords(response.data.accounts[0].name)
                 }
                 fetchHealthReport()
             }
@@ -112,6 +110,7 @@ export default function CompanionDashboard() {
     }
 
     const fetchPatientRecords = async (accountName: string) => {
+        setLoading(true)
         try {
             const response = await GetPatientRecords(accountName)
             if (response.status === 200) {
@@ -124,6 +123,8 @@ export default function CompanionDashboard() {
                 description: "Failed to fetch patient records. Please try again later.",
                 variant: "destructive",
             })
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -298,59 +299,61 @@ export default function CompanionDashboard() {
                 <TabsContent value="health-records">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <Activity className="mr-2 h-5 w-5 text-green-500" />
-                                    Health Records
-                                </div>
-                                <select
-                                    value={selectedAccount?.id || ''}
-                                    onChange={(e) => {
-                                        const account = patient.accounts.find(acc => acc.id.toString() === e.target.value)
-                                        if (account) {
-                                            setSelectedAccount(account)
-                                            fetchPatientRecords(account.name)
-                                        }
-                                    }}
-                                    className="border rounded p-2"
-                                >
-                                    {patient.accounts.map((account) => (
-                                        <option key={account.id} value={account.id}>
-                                            {account.name}
-                                        </option>
-                                    ))}
-                                </select>
+                            <CardTitle className="flex items-center">
+                                <Activity className="mr-2 h-5 w-5 text-green-500" />
+                                Health Records
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                                {groupedHealthRecords.length > 0 ? (
-                                    groupedHealthRecords.map(([date, records]) => (
-                                        <Collapsible
-                                            key={date}
-                                            title={
-                                                <div className="flex items-center">
-                                                    <Calendar className="mr-2 h-4 w-4" />
-                                                    <span>{date}</span>
-                                                </div>
-                                            }
+                            <div className="mb-4">
+                                <h3 className="text-lg font-semibold mb-2">Select an Account</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {patient.accounts.map((account) => (
+                                        <Button
+                                            key={account.id}
+                                            variant={selectedAccount?.id === account.id ? "default" : "outline"}
+                                            onClick={() => {
+                                                setSelectedAccount(account)
+                                                fetchPatientRecords(account.name)
+                                            }}
                                         >
-                                            {records.map((record, index) => (
-                                                <div key={index} className="mb-4 p-4 bg-gray-100 rounded-lg">
-                                                    <p className="font-medium mb-2">Time: {new Date(record.importTime).toLocaleTimeString()}</p>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <p><Heart className="inline mr-1" /> Blood Pressure: {record.sbp}/{record.dbp} mmHg</p>
-                                                        <p><Droplet className="inline mr-1" /> Headache: {record.isHeadache}</p>
-                                                        <p><Stethoscope className="inline mr-1" /> Chest Pain: {record.isChestPain}</p>
-                                                        <p><Droplets className="inline mr-1" /> Less Urination: {record.isLessUrination}</p>
+                                            {account.name}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+                            <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+                                {selectedAccount ? (
+                                    groupedHealthRecords.length > 0 ? (
+                                        groupedHealthRecords.map(([date, records]) => (
+                                            <Collapsible
+                                                key={date}
+                                                title={
+                                                    <div className="flex items-center">
+                                                        <Calendar className="mr-2 h-4 w-4" />
+                                                        <span>{date}</span>
                                                     </div>
-                                                    <p className="mt-2"><span className="font-medium">Description:</span> {record.description}</p>
-                                                </div>
-                                            ))}
-                                        </Collapsible>
-                                    ))
+                                                }
+                                            >
+                                                {records.map((record, index) => (
+                                                    <div key={index} className="mb-4 p-4 bg-gray-100 rounded-lg">
+                                                        <p className="font-medium mb-2">Time: {new Date(record.importTime).toLocaleTimeString()}</p>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <p><Heart className="inline mr-1" /> Blood Pressure: {record.sbp}/{record.dbp} mmHg</p>
+                                                            <p><Droplet className="inline mr-1" /> Headache: {record.isHeadache}</p>
+                                                            <p><Stethoscope className="inline mr-1" /> Chest Pain: {record.isChestPain}</p>
+                                                            <p><Droplets className="inline mr-1" /> Less Urination: {record.isLessUrination}</p>
+                                                        </div>
+                                                        <p className="mt-2"><span className="font-medium">Description:</span> {record.description}</p>
+                                                    </div>
+                                                ))}
+                                            </Collapsible>
+                                        ))
+                                    ) : (
+                                        <p>No health records available for the selected account.</p>
+                                    )
                                 ) : (
-                                    <p>No health records available for the selected account.</p>
+                                    <p>Please select an account to view health records.</p>
                                 )}
                             </ScrollArea>
                         </CardContent>
@@ -370,8 +373,8 @@ export default function CompanionDashboard() {
                                     onClick={() => setIsReportExpanded(!isReportExpanded)}
                                 >
                                     {isReportExpanded ? (
-
                                         <>
+
                                             <ChevronUp className="h-4 w-4 mr-2" />
                                             Collapse
                                         </>
