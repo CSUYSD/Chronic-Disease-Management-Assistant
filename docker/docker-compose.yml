@@ -19,17 +19,18 @@ services:
       rabbitmq:
         condition: service_healthy
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/health-care?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/health-care?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=rootpassword
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_HOST=localhost
       - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_ELASTICSEARCH_URIS=http://elasticsearch:9200
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - REDIS_STACK_HOST=redis-stack
-      - REDIS_STACK_PORT=6379
+      - SPRING_DATA_ELASTICSEARCH_URIS=http://localhost:9200
+      - SPRING_RABBITMQ_HOST=localhost
+      - REDIS_STACK_HOST=localhost
+      - REDIS_STACK_PORT=6380
       - REDIS_STACK_PASSWORD=123456
+    network_mode: host
 
   frontend:
     build: ../client
@@ -37,6 +38,7 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+    network_mode: host
 
   mysql:
     image: mysql:8.0
@@ -51,6 +53,7 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
       retries: 10
+    network_mode: host
 
   redis:
     image: redis:6.2-alpine
@@ -63,6 +66,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    network_mode: host
 
   redis-stack:
     image: redis/redis-stack:latest
@@ -77,6 +81,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    network_mode: host
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
@@ -92,15 +97,17 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    network_mode: host
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.14.0
     ports:
       - "5601:5601"
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_HOSTS=http://localhost:9200
     depends_on:
       - elasticsearch
+    network_mode: host
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -114,6 +121,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    network_mode: host
 
 volumes:
   mysql_data:

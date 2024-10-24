@@ -33,12 +33,12 @@ public class RedisVector{
                                    RedisVectorStoreProperties properties,
                                    RedisConnectionDetails redisConnectionDetails) {
         RedisVectorStore.RedisVectorStoreConfig config = RedisVectorStore.RedisVectorStoreConfig.builder()
-                .withIndexName(properties.getIndex())
-                .withPrefix(properties.getPrefix())
+                .withIndexName("health-care")
+                .withPrefix("doc:")
                 .build();
 
         return new RedisVectorStore(config, embeddingModel,
-                new JedisPooled("redis-stack", 6380, null, "123456"),
+                new JedisPooled("localhost", 6380, null, "123456"),
                 true);
     }
 }
