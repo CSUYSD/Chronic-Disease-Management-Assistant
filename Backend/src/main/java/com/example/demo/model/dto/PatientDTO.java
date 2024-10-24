@@ -15,5 +15,5 @@ public class PatientDTO {
     private LocalDate dob;
     private String avatar;
     private String selectedAccountName;
-    private List<Account> accounts;
+    private List<AccountDTO> accounts;
 }
