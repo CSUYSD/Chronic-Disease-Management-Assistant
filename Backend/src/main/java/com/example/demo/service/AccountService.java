@@ -107,8 +107,6 @@ public class AccountService {
         Account newAccount = new Account();
         newAccount.setAccountName(accountDTO.getName());
         newAccount.setPatient(user);
-        newAccount.setTotalIncome(0.0);
-        newAccount.setTotalExpense(0.0);
         accountDao.save(newAccount);
 
         // 把这个新account加进用户关联的redis里
@@ -116,9 +114,7 @@ public class AccountService {
         RedisAccount newRedisAccount =
                 new RedisAccount(
                         newAccount.getId(),
-                        newAccount.getAccountName(),
-                        newAccount.getTotalIncome(),
-                        newAccount.getTotalExpense());
+                        newAccount.getAccountName());
 
         redisTemplate.opsForValue().set(newAccountKey, newRedisAccount);
         return "账户创建成功";
@@ -143,8 +139,6 @@ public class AccountService {
 
         // 更新账户名称和余额
         existingAccount.setAccountName(accountDTO.getName());
-        existingAccount.setTotalIncome(accountDTO.getTotal_income());
-        existingAccount.setTotalExpense(accountDTO.getTotal_expense());
 
         // 保存并返回更新后的账户信息
         Account updatedAccount = accountDao.save(existingAccount);
@@ -177,9 +171,7 @@ public class AccountService {
         String redisKey = "login_user:" + userId + ":account:" + accountId;
         RedisAccount redisAccount = new RedisAccount(
                 account.getId(),
-                account.getAccountName(),
-                account.getTotalIncome(),
-                account.getTotalExpense());
+                account.getAccountName());
         redisTemplate.opsForValue().set(redisKey, redisAccount);
     }
 

@@ -1,15 +1,16 @@
 package com.example.demo.service;
 
 import com.example.demo.model.HealthRecord;
+import com.example.demo.model.dto.AccountDTO;
 import com.example.demo.model.dto.HealthRecordDTO;
 import com.example.demo.repository.AccountDao;
 import com.example.demo.repository.CompanionDao;
 import com.example.demo.repository.PatientDao;
-import com.example.demo.model.Account;
 import com.example.demo.model.dto.PatientDTO;
 import com.example.demo.model.userimpl.Companion;
 import com.example.demo.model.userimpl.Patient;
 import com.example.demo.utility.GetCurrentUserInfo;
+import com.example.demo.utility.converter.AccountConverter;
 import com.example.demo.utility.converter.HealthRecordConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +19,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 /**
@@ -117,8 +116,10 @@ public class CompanionService {
         dto.setPhone(patient.getPhone());
         dto.setDob(patient.getDob());
         dto.setAvatar(patient.getAvatar());
-        List<Account> accounts = patient.getAccounts();
-        dto.setAccounts(accounts);
+        List<AccountDTO> accountsDTO = patient.getAccounts().stream()
+                .map(AccountConverter::toAccountDTO)
+                .collect(Collectors.toList());
+        dto.setAccounts(accountsDTO);
         return dto;
     }
 
