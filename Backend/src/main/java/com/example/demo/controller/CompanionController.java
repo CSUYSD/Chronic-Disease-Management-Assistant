@@ -47,9 +47,9 @@ public class CompanionController {
     }
 
     @GetMapping("/bind-patient-records")
-    public List<HealthRecordDTO> getBindPatientHealthRecordsForCompanion(@RequestHeader("Authorization") String token) {
+    public List<HealthRecordDTO> getBindPatientHealthRecordsForCompanion(@RequestHeader("Authorization") String token, @RequestParam String accountName) {
            try{
-               return companionService.getAllRecordsForCompanion(token);
+               return companionService.getAllRecordsForCompanion(token, accountName);
            } catch (Exception e) {
                log.error("Error getting health records for companion", e);
                return null;
