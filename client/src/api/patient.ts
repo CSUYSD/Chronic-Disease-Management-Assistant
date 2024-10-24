@@ -1,10 +1,5 @@
 import { request } from "@/utils"
 
-interface diseaseFormData {
-    accountName: string
-}
-
-
 
 export function switchDisease(id: string) {
     return request ({

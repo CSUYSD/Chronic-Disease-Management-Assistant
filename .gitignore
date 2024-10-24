@@ -1,2 +1,5 @@
-.idea.DS_Store
-.DS_Store
+.idea
+.env
+docker/.env
+docker/data
+docker/venv

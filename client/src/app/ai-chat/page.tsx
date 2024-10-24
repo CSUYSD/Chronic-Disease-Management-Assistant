@@ -72,7 +72,7 @@ export default function AiChatPage() {
     const [, setIsCreatingNewChat] = useState(false)
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const [isUploading, setIsUploading] = useState(false)
-    const [report, setReport] = useState<{ content: string; generatedAt: string } | null>(null)
+    const [, setReport] = useState<{ content: string; generatedAt: string } | null>(null)
     const [reportStatus, setReportStatus] = useState<'idle' | 'loading' | 'error'>('idle')
     const scrollAreaRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -142,7 +142,7 @@ export default function AiChatPage() {
             console.error('Error getting AI response:', error);
             toast({
                 title: "Error",
-                description: `Failed to get response from AI: ${error.message}`,
+                description: `Failed to get response from AI: ${(error as Error).message || 'Unknown error'}`,
                 variant: "destructive",
             });
         } finally {
@@ -523,7 +523,7 @@ export default function AiChatPage() {
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 <AnimatePresence>
-                                    {uploadedFiles.map((file, index) => (
+                                    {uploadedFiles.map((file,) => (
                                         <motion.div
                                             key={file.name}
                                             initial={{ opacity: 0, scale: 0.8 }}

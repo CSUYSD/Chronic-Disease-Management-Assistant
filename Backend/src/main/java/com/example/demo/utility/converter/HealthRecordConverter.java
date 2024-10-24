@@ -1,6 +1,6 @@
 package com.example.demo.utility.converter;
 
-import com.example.demo.model.HealthRecordDocument;
+import com.example.demo.model.es.HealthRecordDocument;
 import com.example.demo.model.dto.HealthRecordDTO;
 import com.example.demo.model.HealthRecord;
 import org.springframework.stereotype.Component;
