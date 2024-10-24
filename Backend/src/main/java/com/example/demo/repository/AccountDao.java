@@ -19,6 +19,4 @@ public interface AccountDao extends JpaRepository<Account, Long> {
 
     List<Account> findByPatient(Patient patient);
 
-    @Query(value = "SELECT a.id FROM Account a WHERE a.accountName = ?1 AND a.patient.id = ?2")
-    Long findAccountIdByAccountNameAndTransactionUserId(String accountName, Long userId);
 }

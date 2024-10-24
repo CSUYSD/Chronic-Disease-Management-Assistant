@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.example.demo.model.message.AnalyseRequest;
@@ -48,7 +49,7 @@ public class HealthRecordService {
         this.ESHealthRecordService = ESHealthRecordService;
     }
 
-    public List<HealthRecord> getAllRecordsByAccountId(Long accountId) {
+    public List<HealthRecord> getAllRecordsByAccountId(Optional<Long> accountId) {
         return recordDao.findAllByAccountId(accountId);
     }
 
