@@ -6,6 +6,7 @@ import org.springframework.ai.autoconfigure.vectorstore.redis.RedisVectorStorePr
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.RedisVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -18,27 +19,27 @@ import redis.clients.jedis.JedisPooled;
 @EnableAutoConfiguration(exclude = {RedisVectorStoreAutoConfiguration.class})
 // 读取RedisStack的配置信息
 @EnableConfigurationProperties({RedisVectorStoreProperties.class})
-@AllArgsConstructor
 public class RedisVector{
 
-    /**
-     * 创建RedisStack向量数据库
-     *
-     * @param embeddingModel 嵌入模型
-     * @param properties     redis-stack的配置信息
-     * @return vectorStore 向量数据库
-     */
+    @Value("${REDIS_STACK_HOST:host.docker.internal}")
+    private String redisStackHost;
+
+    @Value("${REDIS_STACK_PORT:6380}")
+    private int redisStackPort;
+
+    @Value("${REDIS_STACK_PASSWORD:123456}")
+    private String redisStackPassword;
+
     @Bean
     public VectorStore vectorStore(EmbeddingModel embeddingModel,
-                                   RedisVectorStoreProperties properties,
-                                   RedisConnectionDetails redisConnectionDetails) {
+                                   RedisVectorStoreProperties properties) {
         RedisVectorStore.RedisVectorStoreConfig config = RedisVectorStore.RedisVectorStoreConfig.builder()
                 .withIndexName("health-care")
                 .withPrefix("doc:")
                 .build();
 
         return new RedisVectorStore(config, embeddingModel,
-                new JedisPooled("localhost", 6380, null, "123456"),
+                new JedisPooled(redisStackHost, redisStackPort, null, redisStackPassword),
                 true);
     }
 }
