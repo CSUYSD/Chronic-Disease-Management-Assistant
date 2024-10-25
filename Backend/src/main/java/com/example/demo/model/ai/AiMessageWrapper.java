@@ -7,7 +7,7 @@ import java.util.Map;
 
 @Data
 public class AiMessageWrapper {
-    private InputMessage message;      // 用户原始消息
+    private InputMessage inputMessage;      // 用户原始消息
     private ChatParameters params;    // 聊天参数
 }
 

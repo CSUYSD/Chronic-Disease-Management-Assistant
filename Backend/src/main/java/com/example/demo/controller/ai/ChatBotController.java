@@ -18,29 +18,31 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+import static io.lettuce.core.GeoArgs.Unit.m;
+
 @RestController
 @RequestMapping("/ai/chat")
 @Slf4j
 public class ChatBotController {
-    @Autowired ChromaVectorStore chromaVectorStore;
+    private final ChromaVectorStore chromaVectorStore;
     private final OpenAiChatModel openAiChatModel;
-    private final ChatMemory chatMemory = new InMemoryChatMemory();
-    private final ListableBeanFactory applicationContext;
-
-    private String currentConversationId = "";
+    private final ApplicationContext applicationContext;
+    private final GetCurrentUserInfo getCurrentUserInfo;
     @Autowired
-    private GetCurrentUserInfo getCurrentUserInfo;
-
-    public ChatBotController(OpenAiChatModel openAiChatModel, ListableBeanFactory applicationContext) {
+    public ChatBotController(ChromaVectorStore chromaVectorStore, OpenAiChatModel openAiChatModel, ApplicationContext applicationContext, ApplicationContext applicationContext1, GetCurrentUserInfo getCurrentUserInfo) {
+        this.chromaVectorStore = chromaVectorStore;
         this.openAiChatModel = openAiChatModel;
         this.applicationContext = applicationContext;
+        this.getCurrentUserInfo = getCurrentUserInfo;
     }
-
+    private String currentConversationId = "";
+    private final ChatMemory chatMemory = new InMemoryChatMemory();
 
     @SneakyThrows
     @PostMapping(value = "/rag")
@@ -53,18 +55,18 @@ public class ChatBotController {
             functionBeanNames = new String[beansWithAnnotation.keySet().size()];
             functionBeanNames = beansWithAnnotation.keySet().toArray(functionBeanNames);
             System.out.printf("================functionBeanNames: %s\n", functionBeanNames);
-            input.getMessage().setAccountId(String.valueOf(getCurrentUserInfo.getCurrentAccountId(getCurrentUserInfo.getCurrentUserId(token))));
+            input.getInputMessage().setAccountId(String.valueOf(getCurrentUserInfo.getCurrentAccountId(getCurrentUserInfo.getCurrentUserId(token))));
         }
-        currentConversationId = String.valueOf(input.getMessage().getConversationId());
+        currentConversationId = String.valueOf(input.getInputMessage().getConversationId());
 
         return ChatClient.create(openAiChatModel).prompt()
-                .user(promptUserSpec -> buildPrompt(promptUserSpec, input.getMessage()))
+                .user(promptUserSpec -> buildPrompt(promptUserSpec, input))
                 // 2. QuestionAnswerAdvisor会在运行时替换模板中的占位符`question_answer_context`，替换成向量数据库中查询到的文档。此时的query=用户的提问+替换完的提示词模板;
 //                .advisors(new QuestionAnswerAdvisor(chromaVectorStore, SearchRequest.defaults(), promptWithContext))
                 .functions(functionBeanNames)
                 .advisors(advisorSpec -> {
                     // 使用历史消息
-                    useChatHistory(advisorSpec, String.valueOf(input.getMessage().getConversationId()));
+                    useChatHistory(advisorSpec, String.valueOf(input.getInputMessage().getConversationId()));
                     // 使用向量数据库
                     useVectorStore(advisorSpec, input.getParams().getEnableVectorStore());
                 })
@@ -74,9 +76,13 @@ public class ChatBotController {
     }
 
 
-    private void buildPrompt(ChatClient.PromptUserSpec promptUserSpec, InputMessage message) {
-        String m = message.getMessage() + "My account id is " + message.getAccountId();
-        promptUserSpec.text(m);
+    private void buildPrompt(ChatClient.PromptUserSpec promptUserSpec, AiMessageWrapper message) {
+        if (message.getParams().getEnableAgent()){
+            String m = message.getInputMessage().getMessage() + "My account id is " + message.getInputMessage().getAccountId();
+            promptUserSpec.text(m);
+        } else {
+            promptUserSpec.text(message.getInputMessage().getMessage());
+        }
     }
 
 
