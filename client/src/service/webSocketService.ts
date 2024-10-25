@@ -38,7 +38,7 @@ class WebSocketService {
         }
 
         const token = getToken();
-        const socket = new SockJS(`http://localhost:8080/ws`);
+        const socket = new SockJS(`https://3.106.177.60/api/ws`);
 
         this.stompClient = new Client({
             webSocketFactory: () => socket,
