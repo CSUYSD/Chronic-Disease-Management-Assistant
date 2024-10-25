@@ -18,7 +18,8 @@ interface SignUpFormData {
 interface UpdateUserDetails {
     username?: string;
     email?: string;
-    // 添加其他可更新的字段
+    phone?: string;
+    dob?: string;
 }
 
 /**
@@ -80,27 +81,6 @@ export function getProfileAPI(): Promise<AxiosResponse> {
 }
 
 /**
- * Update Password API
- * @param {string} oldPassword - The old password
- * @param {string} newPassword - The new password
- * @returns {Promise<AxiosResponse>} - The API response
- */
-export function updatePasswordAPI(oldPassword: string, newPassword: string): Promise<AxiosResponse> {
-    console.log("Updating password");
-    return request({
-        url: '/updatePwd',
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        data: {
-            oldPassword,
-            newPassword
-        }
-    });
-}
-
-/**
  * Update User API
  * @param {string} id - The user ID
  * @param {UpdateUserDetails} userDetails - The user details to update
@@ -109,7 +89,7 @@ export function updatePasswordAPI(oldPassword: string, newPassword: string): Pro
 export function updateUserAPI(userDetails: UpdateUserDetails): Promise<AxiosResponse> {
     console.log("Updating user details:", userDetails);
     return request({
-        url: "/users/update/",
+        url: "/users/update/userinfo",
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json'

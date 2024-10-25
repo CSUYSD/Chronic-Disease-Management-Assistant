@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/hooks/use-toast"
-import { User, Mail, Phone, Calendar, Heart, Camera, Key } from 'lucide-react'
+import { User, Mail, Phone, Calendar, Heart, Key, Save } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getProfileAPI, updateUserAPI } from "@/api/user"
 import { GetRandomString } from "@/api/patient"
@@ -20,7 +20,6 @@ export default function ProfilePage() {
     const dispatch = useDispatch<AppDispatch>()
     const profile = useSelector(selectProfile)
     const isLoading = useSelector(selectIsLoading)
-    const [isEditing, setIsEditing] = useState(false)
     const [initialFetchDone, setInitialFetchDone] = useState(false)
     const [bindingCode, setBindingCode] = useState<string | null>(null)
     const [editedProfile, setEditedProfile] = useState(profile || {
@@ -29,13 +28,13 @@ export default function ProfilePage() {
         phone: '',
         dob: '',
         bio: '',
-        // 添加其他必要的字段，确保它们都有默认值
     })
 
     const fetchProfile = useCallback(async () => {
         try {
             const response = await getProfileAPI()
             dispatch(setProfile(response.data))
+            setEditedProfile(response.data)
         } catch (error) {
             console.error('Failed to fetch profile:', error)
             dispatch(setError('Failed to load profile. Please try again later.'))
@@ -80,6 +79,39 @@ export default function ProfilePage() {
         fetchBindingCode()
     }, [profile?.role])
 
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target
+        setEditedProfile(prev => ({ ...prev, [name]: value }))
+    }
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        try {
+            const updatedProfile = {
+                ...editedProfile,
+                email: editedProfile.email || undefined,
+                phone: editedProfile.phone || undefined,
+                dob: editedProfile.dob || undefined,
+                bio: editedProfile.bio || undefined
+            }
+            const response = await updateUserAPI(updatedProfile)
+            dispatch(updateProfile(response.data))
+            toast({
+                title: "Success",
+                description: "Your profile has been successfully updated.",
+            })
+            // Refresh the page immediately after successful update
+            window.location.reload()
+        } catch (error) {
+            console.error('Failed to update profile:', error)
+            toast({
+                title: "Error",
+                description: "Failed to update profile. Please try again later.",
+                variant: "destructive",
+            })
+        }
+    }
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -112,38 +144,6 @@ export default function ProfilePage() {
                 </motion.p>
             </div>
         )
-    }
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target
-        setEditedProfile(prev => ({ ...prev, [name]: value }))
-    }
-
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
-        try {
-            const updatedProfile = {
-                ...editedProfile,
-                email: editedProfile.email || undefined,
-                phone: editedProfile.phone || undefined,
-                dob: editedProfile.dob || undefined,
-                bio: editedProfile.bio || undefined
-            }
-            const response = await updateUserAPI(updatedProfile)
-            dispatch(updateProfile(response.data))
-            setIsEditing(false)
-            toast({
-                title: "Success",
-                description: "Your profile has been successfully updated.",
-            })
-        } catch (error) {
-            console.error('Failed to update profile:', error)
-            toast({
-                title: "Error",
-                description: "Failed to update profile. Please try again later.",
-                variant: "destructive",
-            })
-        }
     }
 
     return (
@@ -201,8 +201,7 @@ export default function ProfilePage() {
                                                     name={field}
                                                     value={editedProfile[field as keyof typeof editedProfile] || ''}
                                                     onChange={handleInputChange}
-                                                    readOnly={!isEditing}
-                                                    className={isEditing ? "bg-white" : "bg-gray-100"}
+                                                    className="bg-white"
                                                 />
                                             </motion.div>
                                         ))}
@@ -222,8 +221,7 @@ export default function ProfilePage() {
                                             name="bio"
                                             value={editedProfile.bio || ''}
                                             onChange={handleInputChange}
-                                            readOnly={!isEditing}
-                                            className={isEditing ? "bg-white" : "bg-gray-100"}
+                                            className="bg-white"
                                             rows={4}
                                         />
                                     </motion.div>
@@ -233,20 +231,9 @@ export default function ProfilePage() {
                                         transition={{ duration: 0.3, delay: 0.4 }}
                                         className="flex justify-end space-x-4"
                                     >
-                                        {isEditing ? (
-                                            <>
-                                                <Button type="submit" className="bg-green-500 hover:bg-green-600 text-white">
-                                                    <Key className="mr-2 h-5 w-5" /> Save Changes
-                                                </Button>
-                                                <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
-                                                    Cancel
-                                                </Button>
-                                            </>
-                                        ) : (
-                                            <Button type="button" onClick={() => setIsEditing(true)}>
-                                                <Camera className="mr-2 h-5 w-5" /> Edit Profile
-                                            </Button>
-                                        )}
+                                        <Button type="submit" className="bg-green-500 hover:bg-green-600 text-white">
+                                            <Save className="mr-2 h-5 w-5" /> Save Changes
+                                        </Button>
                                     </motion.div>
                                 </form>
                             </CardContent>
@@ -282,8 +269,8 @@ export default function ProfilePage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.5, delay: 0.6 }}
                                 >
-                                    <h2 className="text-2xl font-semibold text-gray-800">{profile.username || 'N/A'}</h2>
-                                    <p className="text-lg text-gray-600">{profile.email || 'N/A'}</p>
+                                    <h2 className="text-2xl font-semibold text-gray-800">{editedProfile.username || 'N/A'}</h2>
+                                    <p className="text-lg text-gray-600">{editedProfile.email || 'N/A'}</p>
                                 </motion.div>
                                 <motion.div
                                     className="pt-4 space-y-4"
@@ -293,11 +280,11 @@ export default function ProfilePage() {
                                 >
                                     <div className="flex items-center text-lg">
                                         <Calendar className="mr-2 h-5 w-5 text-gray-500" />
-                                        <span>Born: {profile.dob || 'Not provided'}</span>
+                                        <span>Born: {editedProfile.dob || 'Not provided'}</span>
                                     </div>
                                     <div className="flex items-center text-lg">
                                         <Phone className="mr-2 h-5 w-5 text-gray-500" />
-                                        <span>Phone: {profile.phone || 'Not provided'}</span>
+                                        <span>Phone: {editedProfile.phone || 'Not provided'}</span>
                                     </div>
                                     <motion.div
                                         className="bg-gray-100 p-4 rounded-lg"
@@ -305,7 +292,7 @@ export default function ProfilePage() {
                                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
                                     >
                                         <p className="text-gray-800 font-medium">
-                                            {profile.bio || 'Add a bio to tell us more about yourself!'}
+                                            {editedProfile.bio || 'Add a bio to tell us more about yourself!'}
                                         </p>
                                     </motion.div>
                                 </motion.div>

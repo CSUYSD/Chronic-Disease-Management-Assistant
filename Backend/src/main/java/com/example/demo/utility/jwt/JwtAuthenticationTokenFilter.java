@@ -40,7 +40,8 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
                 || request.getRequestURI().equals("/signup")
                 || request.getRequestURI().equals("/login")
                 || request.getRequestURI().contains("/message")
-                || request.getRequestURI().contains("/document")) {
+                || request.getRequestURI().contains("/document")
+                || request.getRequestURI().contains("/ws")) {
             filterChain.doFilter(request, response);
             return;
         }

@@ -1,6 +1,7 @@
 package com.example.demo.listener;
 
 import com.example.demo.model.message.AnalyseRequest;
+import com.example.demo.service.AccountService;
 import com.example.demo.service.HealthRecordService;
 import com.example.demo.service.ai.AiAnalyserService;
 import com.example.demo.utility.converter.PromptConverter;
@@ -17,14 +18,16 @@ public class AiAnalyserListener {
     public final AiAnalyserService aiAnalyserService;
     public final GetCurrentUserInfo getCurrentUserInfo;
     public final HealthRecordService healthRecordService;
+    public final AccountService accountService;
     public final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public AiAnalyserListener(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, HealthRecordService healthRecordService, SimpMessagingTemplate messagingTemplate) {
+    public AiAnalyserListener(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, HealthRecordService healthRecordService, SimpMessagingTemplate messagingTemplate, AccountService accountService) {
         this.aiAnalyserService = aiAnalyserService;
         this.getCurrentUserInfo = getCurrentUserInfo;
         this.healthRecordService = healthRecordService;
         this.messagingTemplate = messagingTemplate;
+        this.accountService = accountService;
         log.info("AiAnalyserListener initialized with dependencies");
     }
 
