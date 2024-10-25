@@ -35,6 +35,7 @@ public class AiAnalyserListener {
         String currentRecord = request.getContent();
         System.out.printf("=========================================received currentRecord: %s\n", currentRecord);
         long accountId = request.getAccountId();
+        Long patientId = healthRecordService.getPatientIdByAccountId(accountId);
         log.debug("Processing current record: {}", currentRecord);
         log.info("Fetching recent records for accountId: {}", accountId);
         String recentRecords = PromptConverter.parseRecentHealthRecordsToPrompt(healthRecordService.getCertainDaysRecords(accountId, 10));

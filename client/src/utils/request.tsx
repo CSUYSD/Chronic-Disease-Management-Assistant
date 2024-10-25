@@ -2,7 +2,7 @@ import axios from "axios";
 import { getToken, removeToken } from "./token";
 
 const request = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://3.106.177.60/api',
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
     timeout: 100000,
 });
 

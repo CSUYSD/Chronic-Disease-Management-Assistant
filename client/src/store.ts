@@ -1,17 +1,18 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { persistStore, persistReducer } from 'redux-persist'
-import storage from 'redux-persist/lib/storage' // defaults to localStorage for web
+import storage from 'redux-persist/lib/storage'
 import { combineReducers } from 'redux'
 
 import chatReducer from '@/store/chatSlice'
 import fileReducer from '@/store/fileSlice'
 import profileReducer from '@/store/profileSlice'
 import diseaseReducer from '@/store/diseaseSlice'
+import warningRecordsReducer from "@/store/warningRecordsSlice";
 
 const persistConfig = {
     key: 'root',
     storage,
-    // If you want to persist only specific reducers, list them here:
+    // persist these data in the localstorage
     whitelist: ['chat', 'file', 'profile' , 'disease']
 }
 
@@ -19,7 +20,8 @@ const rootReducer = combineReducers({
     chat: chatReducer,
     file: fileReducer,
     profile: profileReducer,
-    disease: diseaseReducer
+    disease: diseaseReducer,
+    warningRecords: warningRecordsReducer
 })
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)
