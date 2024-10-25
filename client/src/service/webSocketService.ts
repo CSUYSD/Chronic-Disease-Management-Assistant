@@ -1,12 +1,12 @@
 import SockJS from 'sockjs-client';
-import { Client, Frame, Message, StompSubscription } from '@stomp/stompjs';
+import { Client, Frame, Message } from '@stomp/stompjs';
 import { getToken } from "@/utils";
 
-// 定义消息处理器的类型
-type MessageHandler = (payload: SuspiciousTransaction) => void;
+// define the type of message handler
+type MessageHandler = (payload: WarningRecords) => void;
 
-// 定义可疑交易的接口
-interface SuspiciousTransaction {
+// define the interface of warning records
+interface WarningRecords {
     id: number;
     description: string;
     date: string;
@@ -94,7 +94,7 @@ class WebSocketService {
                 const risk = description.toLowerCase().includes('warning') ? 'high' : 'low';
 
                 if (risk === 'high') {
-                    const payload: SuspiciousTransaction = {
+                    const payload: WarningRecords = {
                         id: Date.now(),
                         description,
                         date: new Date().toISOString().split('T')[0],
@@ -120,10 +120,10 @@ class WebSocketService {
      * 更新会话存储中的可疑交易
      * @param payload 新的可疑交易
      */
-    private updateSessionStorage(payload: SuspiciousTransaction): void {
-        const storedTransactions: SuspiciousTransaction[] = JSON.parse(sessionStorage.getItem('suspiciousTransactions') || '[]');
+    private updateSessionStorage(payload: WarningRecords): void {
+        const storedTransactions: WarningRecords[] = JSON.parse(sessionStorage.getItem('warningRecords') || '[]');
         const updatedTransactions = [payload, ...storedTransactions].slice(0, 5);
-        sessionStorage.setItem('suspiciousTransactions', JSON.stringify(updatedTransactions));
+        sessionStorage.setItem('warningRecords', JSON.stringify(updatedTransactions));
     }
 
     /**

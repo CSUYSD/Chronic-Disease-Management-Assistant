@@ -14,6 +14,5 @@ public class PatientDTO {
     private String phone;
     private LocalDate dob;
     private String avatar;
-    private String selectedAccountName;
     private List<AccountDTO> accounts;
 }

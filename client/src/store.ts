@@ -7,6 +7,7 @@ import chatReducer from '@/store/chatSlice'
 import fileReducer from '@/store/fileSlice'
 import profileReducer from '@/store/profileSlice'
 import diseaseReducer from '@/store/diseaseSlice'
+import warningRecordsReducer from "@/store/warningRecordsSlice";
 
 const persistConfig = {
     key: 'root',
@@ -19,7 +20,8 @@ const rootReducer = combineReducers({
     chat: chatReducer,
     file: fileReducer,
     profile: profileReducer,
-    disease: diseaseReducer
+    disease: diseaseReducer,
+    warningRecords: warningRecordsReducer
 })
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)
