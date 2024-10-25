@@ -62,9 +62,9 @@ public class DemoApplication {
 //		return chromaApi;
 //	}
 //
-	@Bean
-	public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-		return new ChromaVectorStore(embeddingModel, chromaApi, "my-collection", false);
-	}
+//	@Bean
+//	public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
+//		return new ChromaVectorStore(embeddingModel, chromaApi, "my-collection", false);
+//	}
 
 }
