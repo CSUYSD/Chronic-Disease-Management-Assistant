@@ -23,7 +23,7 @@ public class PromptConverter {
         processedRecords.stream()
                 .limit(MAX_RECORDS)
                 .forEach(record -> {
-                    sb.append("Record: ").append(parseHealthRecordToString(record)).append("\n");
+                    sb.append("Record: ").append(parseHealthRecordDTOToString(record)).append("\n");
                 });
 
         return sb.toString();
@@ -33,19 +33,19 @@ public class PromptConverter {
         if (record == null) {
             return "No records found.";
         }
-        return "latest record: " + parseHealthRecordToString(record);
+        return "latest record: " + parseHealthRecordDTOToString(record);
     }
 
-    private static String parseHealthRecordToString(HealthRecordDTO record) {
+    private static String parseHealthRecordDTOToString(HealthRecordDTO healthRecordDTO) {
         return String.format("SBP:%d; DBP:%d; Headache:%s; Back Pain:%s; " +
                         "Chest Pain:%s; Less Urination:%s; Date:%s; Description:%s",
-                record.getSbp(),
-                record.getDbp(),
-                record.getIsHeadache(),
-                record.getIsBackPain(),
-                record.getIsChestPain(),
-                record.getIsLessUrination(),
-                record.getImportTime().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                record.getDescription());
+                healthRecordDTO.getSbp(),
+                healthRecordDTO.getDbp(),
+                healthRecordDTO.getIsHeadache(),
+                healthRecordDTO.getIsBackPain(),
+                healthRecordDTO.getIsChestPain(),
+                healthRecordDTO.getIsLessUrination(),
+                healthRecordDTO.getImportTime().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                healthRecordDTO.getDescription());
     }
 }

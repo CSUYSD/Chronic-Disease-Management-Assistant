@@ -78,7 +78,7 @@
 -- CREATE TABLE health_report (
 --     id BIGINT PRIMARY KEY AUTO_INCREMENT,
 --     patient_id BIGINT,
---     content CLOB,
+--     message CLOB,
 --     FOREIGN KEY (patient_id) REFERENCES patient(id) ON DELETE CASCADE
 -- );
 --

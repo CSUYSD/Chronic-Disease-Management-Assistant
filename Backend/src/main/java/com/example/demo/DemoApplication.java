@@ -55,13 +55,13 @@ public class DemoApplication {
 	}
 
 
-	@Bean
-	public ChromaApi chromaApi(RestClient.Builder restClientBuilder) {
-		String chromaUrl = "http://localhost:8000";
-		ChromaApi chromaApi = new ChromaApi(chromaUrl, restClientBuilder);
-		return chromaApi;
-	}
-
+//	@Bean
+//	public ChromaApi chromaApi(RestClient.Builder restClientBuilder) {
+//		String chromaUrl = "http://localhost:8000";
+//		ChromaApi chromaApi = new ChromaApi(chromaUrl, restClientBuilder);
+//		return chromaApi;
+//	}
+//
 	@Bean
 	public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
 		return new ChromaVectorStore(embeddingModel, chromaApi, "my-collection", false);

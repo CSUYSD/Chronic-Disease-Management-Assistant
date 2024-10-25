@@ -19,7 +19,7 @@ import com.example.demo.service.HealthRecordService;
 @RestController
 @RequestMapping("/records")
 @Validated
-public class RecordController {
+public class HealthRecordController {
 
     private final HealthRecordService healthRecordService;
     private final JwtUtil jwtUtil;
@@ -27,7 +27,7 @@ public class RecordController {
     private StringRedisTemplate stringRedisTemplate;
 
 
-    public RecordController(HealthRecordService healthRecordService, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
+    public HealthRecordController(HealthRecordService healthRecordService, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
         this.healthRecordService = healthRecordService;
         this.jwtUtil = jwtUtil;
     }

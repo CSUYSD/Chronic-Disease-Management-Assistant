@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/ai/analyser")
 @Slf4j
 @AllArgsConstructor
-public class AiAnalyserController {
+public class HealthReportAgentController {
     @Autowired public final AiAnalyserService aiAnalyserService;
 
     @PostMapping("/health-report")
@@ -22,5 +22,7 @@ public class AiAnalyserController {
         log.info("Generating overall health report");
         return ResponseEntity.ok(aiAnalyserService.generateOverAllHealthReport(token));
     }
+
+
 
 }

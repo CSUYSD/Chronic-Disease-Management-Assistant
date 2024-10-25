@@ -13,19 +13,19 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class AiAnalyserListener {
+public class WarningGenerator {
     public final AiAnalyserService aiAnalyserService;
     public final GetCurrentUserInfo getCurrentUserInfo;
     public final HealthRecordService healthRecordService;
     public final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public AiAnalyserListener(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, HealthRecordService healthRecordService, SimpMessagingTemplate messagingTemplate) {
+    public WarningGenerator(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, HealthRecordService healthRecordService, SimpMessagingTemplate messagingTemplate) {
         this.aiAnalyserService = aiAnalyserService;
         this.getCurrentUserInfo = getCurrentUserInfo;
         this.healthRecordService = healthRecordService;
         this.messagingTemplate = messagingTemplate;
-        log.info("AiAnalyserListener initialized with dependencies");
+        log.info("WarningGenerator initialized with dependencies");
     }
 
     @RabbitListener(queues = "new.record.to.ai.analyser")
