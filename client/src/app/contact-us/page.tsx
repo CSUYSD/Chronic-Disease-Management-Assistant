@@ -72,6 +72,7 @@ export default function ContactUsPage() {
         })
 
         setCoffeeCount(1)
+        window.open('https://buymeacoffee.com/eric.sgc', '_blank')
     }
 
     const toggleFaq = (faqId: string) => {
@@ -308,10 +309,10 @@ export default function ContactUsPage() {
                                         transition={{ type: 'spring', stiffness: 300 }}
                                     >
                                         {coffeeCount}
+
                                     </motion.div>
                                     <Button
-                                        onClick={() => setCoffeeCount(coffeeCount +
-                                            1)}
+                                        onClick={() => setCoffeeCount(coffeeCount + 1)}
                                         className="text-lg px-4 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors duration-200"
                                     >
                                         +
