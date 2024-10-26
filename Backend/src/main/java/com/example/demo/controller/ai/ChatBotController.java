@@ -59,7 +59,7 @@ public class ChatBotController {
         }
         currentConversationId = String.valueOf(input.getInputMessage().getConversationId());
 
-        return ChatClient.create(openAiChatModel).prompt()
+        String res = ChatClient.create(openAiChatModel).prompt()
                 .user(promptUserSpec -> buildPrompt(promptUserSpec, input))
                 // 2. QuestionAnswerAdvisor会在运行时替换模板中的占位符`question_answer_context`，替换成向量数据库中查询到的文档。此时的query=用户的提问+替换完的提示词模板;
 //                .advisors(new QuestionAnswerAdvisor(chromaVectorStore, SearchRequest.defaults(), promptWithContext))
@@ -73,6 +73,10 @@ public class ChatBotController {
                 .call()
                 // 3. query发送给大模型得到答案
                 .content();
+        if(input.getParams().getEnableAgent()){
+            chatMemory.add(currentConversationId, new SystemMessage(res));
+        }
+        return res;
     }
 
 
