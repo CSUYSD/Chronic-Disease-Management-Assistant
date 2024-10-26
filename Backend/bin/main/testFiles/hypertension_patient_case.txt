@@ -1,0 +1,32 @@
+Patient Basic Information
+
+Name: Li Ming
+Gender: Male
+Age: 55 years old
+Occupation: Company employee
+Height: 175 cm
+Weight: 85 kg
+BMI: 27.8 (Overweight)
+Marital Status: Married
+Contact Information: 138-XXXX-XXXX
+Chief Complaint The patient presents with recurrent dizziness and headaches for two years, worsening with chest tightness over the past week.
+
+Present Illness History The patient has experienced dizziness and headaches intermittently for the past two years, mainly triggered by high work pressure, which can be relieved by rest. In the past week, symptoms have intensified, accompanied by chest tightness and palpitations, especially noticeable when going up and down stairs. The patient occasionally experiences blurred vision and tinnitus. Symptoms are more severe in the morning and tend to improve in the afternoon. The patient denies any other medical history and has not had any significant infections or acute illnesses recently.
+
+Past Medical History
+
+Hypertension: Diagnosed with hypertension 2 years ago, irregular in taking antihypertensive medications.
+Diabetes: None
+Coronary Heart Disease: None
+Stroke: None
+Smoking History: Smoked for 20 years, approximately one pack per day, recently reduced to half a pack per day over the past six months.
+Drinking History: Occasionally drinks alcohol, mainly in social settings.
+Allergy History No known drug or food allergies.
+
+Family History
+
+Father: Has a history of hypertension, passed away from myocardial infarction at age 60.
+Mother: Has a history of diabetes, currently 70 years old.
+Physical Examination
+
+Blood Pressure: 160/100 mmHg

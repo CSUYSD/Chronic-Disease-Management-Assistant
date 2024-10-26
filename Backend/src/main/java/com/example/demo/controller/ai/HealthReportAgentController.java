@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/ai/analyser")
 @Slf4j
 @AllArgsConstructor
-public class AiAnalyserController {
+public class HealthReportAgentController {
     @Autowired public final AiAnalyserService aiAnalyserService;
 
     @PostMapping("/health-report")

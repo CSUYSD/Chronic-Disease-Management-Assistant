@@ -11,16 +11,22 @@ interface UploadFileFormData extends FormData {
     append(name: string, value: Blob | string, fileName?: string): void;
 }
 
-interface ChatWithFileParams {
-    prompt: string;
-    conversationId: string;
+interface ChatWithFileFormdata {
+    inputMessage: {
+        conversationId: string,
+        message: string
+    },
+    params: {
+        enableAgent: boolean,
+        enableVectorStore: boolean
+    }
 }
 
 interface HealthReport {
     id: string;
     date: string;
     content: string;
-    // 添加其他健康报告可能包含的字段
+
 }
 
 const MessageAPI = 'ai/chat'
@@ -88,18 +94,15 @@ export function ClearFileByFileName(fileName: string): Promise<AxiosResponse> {
 
 /**
  * Chat with File API
- * @param {ChatWithFileParams} params - The chat form data
+ * @param {ChatWithFileParams} formdata - The chat form data
  * @returns {Promise<AxiosResponse<string>>} - The API response
  */
-export function ChatWithFileAPI(params: ChatWithFileParams): Promise<AxiosResponse<string>> {
-    console.log("Sending chat with file data:", params);
+export function ChatWithFileAPI(formdata: ChatWithFileFormdata): Promise<AxiosResponse<string>> {
+    console.log("Sending chat with file data:", formdata);
     return request({
         url: `${MessageAPI}/rag`,
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        params: params
+        method: 'POST',
+        data: formdata
     });
 }
 

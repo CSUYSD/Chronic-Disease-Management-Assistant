@@ -6,12 +6,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
 
 @Repository
-public interface RecordDao extends JpaRepository<HealthRecord, Long> {
+public interface HealthRecordRepository extends JpaRepository<HealthRecord, Long> {
     // 根据账户ID获取所有交易记录
     @Query(value = "SELECT * FROM health_records WHERE account_id = ?1", nativeQuery = true)
     List<HealthRecord> findAllByAccountId(Long accountId);
@@ -25,4 +25,6 @@ public interface RecordDao extends JpaRepository<HealthRecord, Long> {
 
     @Query(value = "SELECT * FROM health_records WHERE account_id = :accountId ORDER BY import_time DESC, id DESC LIMIT :duration", nativeQuery = true)
     List<HealthRecord> findCertainDaysRecords(Long accountId, Integer duration);
+
+    List<HealthRecord> findByUserIdAndImportTimeAfterOrderByImportTimeDesc(Long userId, ZonedDateTime importTime);
 }

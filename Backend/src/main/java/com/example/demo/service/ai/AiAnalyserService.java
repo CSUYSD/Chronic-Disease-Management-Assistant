@@ -81,7 +81,7 @@ public class AiAnalyserService {
         Long userId = getCurrentUserInfo.getCurrentUserId(token);
         Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
         List<HealthRecordDTO> records = healthRecordService.getCertainDaysRecords(accountId, 10);
-        String recentRecords = PromptConverter.parseRecentHealthRecordsToPrompt(records);
+        String recentRecords = PromptConverter.parseRecentHealthRecordsToPrompt(records, false);
 
         String context = promptManager.getHealthReportPrompt(recentRecords);
         String prompt = String.format(promptManager.getHealthReportContext(), recentRecords);

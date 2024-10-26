@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 
 import com.example.demo.repository.AccountDao;
 import com.example.demo.repository.PatientDao;
-import com.example.demo.repository.RecordDao;
+import com.example.demo.repository.HealthRecordRepository;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.HealthRecordDTO;
 import com.example.demo.model.HealthRecord;
@@ -28,7 +28,7 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class HealthRecordService {
-    private final RecordDao recordDao;
+    private final HealthRecordRepository healthRecordRepository;
     private final PatientDao patientDao;
     private final AccountDao accountDao;
     private final JwtUtil jwtUtil;
@@ -40,8 +40,8 @@ public class HealthRecordService {
     private GetCurrentUserInfo getCurrentUserInfo;
 
     @Autowired
-    public HealthRecordService(RecordDao recordDao, JwtUtil jwtUtil, AccountDao accountDao, PatientDao patientDao, RabbitMQService rabbitMQService, ESHealthRecordService ESHealthRecordService) {
-        this.recordDao = recordDao;
+    public HealthRecordService(HealthRecordRepository healthRecordRepository, JwtUtil jwtUtil, AccountDao accountDao, PatientDao patientDao, RabbitMQService rabbitMQService, ESHealthRecordService ESHealthRecordService) {
+        this.healthRecordRepository = healthRecordRepository;
         this.patientDao = patientDao;
         this.jwtUtil = jwtUtil;
         this.accountDao = accountDao;
@@ -50,7 +50,7 @@ public class HealthRecordService {
     }
 
     public List<HealthRecord> getAllRecordsByAccountId(Long accountId) {
-        return recordDao.findAllByAccountId(accountId);
+        return healthRecordRepository.findAllByAccountId(accountId);
     }
 
     @Transactional
@@ -68,7 +68,7 @@ public class HealthRecordService {
         HealthRecord healthRecord = HealthRecordConverter.toHealthRecord(healthRecordDTO);
         healthRecord.setAccount(account);
         healthRecord.setUserId(userId);
-        recordDao.save(healthRecord);
+        healthRecordRepository.save(healthRecord);
 //        sync health record to elastic search
         ESHealthRecordService.syncHealthRecord(healthRecord);
         // Send the latest health record to AI analyser
@@ -79,35 +79,33 @@ public class HealthRecordService {
 
     @Transactional
     public void updateHealthRecord(Long id, HealthRecordDTO healthRecordDTO) {
-        HealthRecord existingRecord = recordDao.findById(id)
+        HealthRecord existingRecord = healthRecordRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Health record not found for id: " + id));
         HealthRecordConverter.updateHealthRecordFromDTO(existingRecord, healthRecordDTO);
-        recordDao.save(existingRecord);
+        healthRecordRepository.save(existingRecord);
 //       update health record to elastic search
         ESHealthRecordService.syncHealthRecord(existingRecord);
     }
 
     public void deleteHealthRecord(Long id) {
-        HealthRecord record = recordDao.findById(id)
+        HealthRecord record = healthRecordRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Health record not found for id: " + id));
-        recordDao.delete(record);
-//      delete health record from elastic search
+        healthRecordRepository.delete(record);
         ESHealthRecordService.deleteHealthRecord(id);
     }
 
     @Transactional
     public void deleteHealthRecordsInBatch(Long accountId, List<Long> recordIds) {
-        List<HealthRecord> records = recordDao.findAllByIdInAndAccountId(recordIds, accountId);
+        List<HealthRecord> records = healthRecordRepository.findAllByIdInAndAccountId(recordIds, accountId);
         if (records.isEmpty()) {
             throw new RuntimeException("No records found for provided IDs and accountId: " + accountId);
         }
-        recordDao.deleteAll(records);
-//      delete health records in batch from elastic search
+        healthRecordRepository.deleteAll(records);
         ESHealthRecordService.deleteHealthRecords(recordIds);
     }
 
     public List<HealthRecordDTO> getCertainDaysRecords(Long accountId, Integer duration) {
-        List<HealthRecord> records = recordDao.findCertainDaysRecords(accountId, duration);
+        List<HealthRecord> records = healthRecordRepository.findCertainDaysRecords(accountId, duration);
         return records.stream()
                 .map(HealthRecordConverter::toHealthRecordDTO)
                 .collect(Collectors.toList());

@@ -69,10 +69,10 @@ public class UserController {
         return userOptional.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody Patient patientDetails) {
+    @PutMapping("/update/userinfo")
+    public ResponseEntity<String> updateUser(@RequestHeader("Authorization") String token, @RequestBody UserDTO userDTO) {
         try {
-            userService.updateUser(id, patientDetails);
+            userService.updateUser(token, userDTO);
             return ResponseEntity.ok("User updated successfully");
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

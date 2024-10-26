@@ -38,7 +38,7 @@ class WebSocketService {
         }
 
         const token = getToken();
-        const socket = new SockJS(`http://localhost:8080/ws`);
+        const socket = new SockJS(`https://3.106.177.60/api/ws`);
 
         this.stompClient = new Client({
             webSocketFactory: () => socket,
@@ -58,9 +58,7 @@ class WebSocketService {
         this.stompClient.activate();
     }
 
-    /**
-     * 处理连接成功的回调
-     */
+
     private handleConnect(): void {
         console.log('STOMP connection established');
         localStorage.setItem('webSocketConnected', 'true');
@@ -68,9 +66,7 @@ class WebSocketService {
         this.subscribeToTopics();
     }
 
-    /**
-     * 订阅相关主题
-     */
+
     private subscribeToTopics(): void {
         if (this.stompClient) {
             this.stompClient.subscribe('/topic/analysis-result/*', this.handleMessage.bind(this));
@@ -88,7 +84,7 @@ class WebSocketService {
             const textContentMatch = content.match(/textContent=([^.]+\.)/);
             if (textContentMatch) {
                 let description = textContentMatch[1].trim();
-                // 移除开头和结尾的引号（如果存在）
+                // remove / in the beginning
                 description = description.replace(/^["']|["']$/g, '');
 
                 const risk = description.toLowerCase().includes('warning') ? 'high' : 'low';
@@ -117,8 +113,8 @@ class WebSocketService {
     }
 
     /**
-     * 更新会话存储中的可疑交易
-     * @param payload 新的可疑交易
+     * update records into session storage
+     * @param payload new warning records
      */
     private updateSessionStorage(payload: WarningRecords): void {
         const storedTransactions: WarningRecords[] = JSON.parse(sessionStorage.getItem('warningRecords') || '[]');
@@ -126,9 +122,7 @@ class WebSocketService {
         sessionStorage.setItem('warningRecords', JSON.stringify(updatedTransactions));
     }
 
-    /**
-     * 处理断开连接的回调
-     */
+
     private handleDisconnect(): void {
         console.log('STOMP connection closed');
         localStorage.removeItem('webSocketConnected');

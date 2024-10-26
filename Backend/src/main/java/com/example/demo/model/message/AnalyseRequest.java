@@ -13,6 +13,6 @@ import java.io.Serializable;
 public class AnalyseRequest implements Serializable {
     @JsonProperty("accountId")
     private Long accountId;
-    @JsonProperty("content")
+    @JsonProperty("message")
     private String content;
 }

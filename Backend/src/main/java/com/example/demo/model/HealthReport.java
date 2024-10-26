@@ -19,6 +19,7 @@ public class HealthReport {
     @Column(columnDefinition = "LONGTEXT")
     private String content;
 
+
     @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "patient_id")

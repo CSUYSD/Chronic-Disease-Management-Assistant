@@ -13,14 +13,14 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class AiAnalyserListener {
+public class WarningGenerator {
     public final AiAnalyserService aiAnalyserService;
     public final GetCurrentUserInfo getCurrentUserInfo;
     public final HealthRecordService healthRecordService;
     public final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public AiAnalyserListener(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, HealthRecordService healthRecordService, SimpMessagingTemplate messagingTemplate) {
+    public WarningGenerator(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, HealthRecordService healthRecordService, SimpMessagingTemplate messagingTemplate) {
         this.aiAnalyserService = aiAnalyserService;
         this.getCurrentUserInfo = getCurrentUserInfo;
         this.healthRecordService = healthRecordService;
@@ -37,7 +37,7 @@ public class AiAnalyserListener {
         long accountId = request.getAccountId();
         log.debug("Processing current record: {}", currentRecord);
         log.info("Fetching recent records for accountId: {}", accountId);
-        String recentRecords = PromptConverter.parseRecentHealthRecordsToPrompt(healthRecordService.getCertainDaysRecords(accountId, 10));
+        String recentRecords = PromptConverter.parseRecentHealthRecordsToPrompt(healthRecordService.getCertainDaysRecords(accountId, 10), true);
         log.info("Recent records parsed: {}", recentRecords);
 
         log.info("Analyzing current record with AI service");

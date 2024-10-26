@@ -74,6 +74,7 @@ export default function AiChatPage() {
     const [isUploading, setIsUploading] = useState(false)
     const [, setReport] = useState<{ content: string; generatedAt: string } | null>(null)
     const [reportStatus, setReportStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+    const [isAgentEnabled, setIsAgentEnabled] = useState(false)
     const scrollAreaRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -112,12 +113,32 @@ export default function AiChatPage() {
 
         try {
             let response;
-            if (uploadedFiles.length > 0) {
+            if (isAgentEnabled) {
+                // Always use ChatWithFileAPI when agent is enabled
                 response = await ChatWithFileAPI({
-                    prompt: input,
-                    conversationId: currentChat.id
+                    inputMessage: {
+                        conversationId: currentChat.id,
+                        message: input
+                    },
+                    params: {
+                        enableAgent: true,
+                        enableVectorStore: false
+                    }
+                })
+            } else if (uploadedFiles.length > 0) {
+                // Use ChatWithFileAPI with vector store when files are uploaded but agent is not enabled
+                response = await ChatWithFileAPI({
+                    inputMessage: {
+                        conversationId: currentChat.id,
+                        message: input
+                    },
+                    params: {
+                        enableAgent: false,
+                        enableVectorStore: true
+                    }
                 })
             } else {
+                // Use FluxMessageWithHistoryAPI when no files are uploaded and agent is not enabled
                 response = await FluxMessageWithHistoryAPI({
                     prompt: input,
                     sessionId: currentChat.id
@@ -384,6 +405,7 @@ export default function AiChatPage() {
                                                 <DropdownMenuItem onClick={() => startRenaming(chat)}>
                                                     <Edit2 className="w-4 h-4 mr-2" />
                                                     Rename
+
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem onClick={() => deleteChatHandler(chat.id)} className="text-red-600">
                                                     <Trash2 className="w-4 h-4 mr-2" />
@@ -398,7 +420,7 @@ export default function AiChatPage() {
                     </ScrollArea>
                 </motion.aside>
 
-                <main className="flex-1 flex  flex-col relative">
+                <main className="flex-1 flex flex-col relative">
                     <header className="bg-white shadow-sm p-4 flex items-center justify-between border-b border-gray-200">
                         <div className="flex items-center">
                             <Button variant="ghost" size="sm" onClick={toggleSidebar} className="mr-2">
@@ -409,18 +431,28 @@ export default function AiChatPage() {
                                 AI Chat Assistant
                             </h1>
                         </div>
-                        <Button
-                            onClick={generateReport}
-                            disabled={reportStatus === 'loading'}
-                            className="bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200"
-                        >
-                            {reportStatus === 'loading' ? (
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            ) : (
-                                <FileText className="w-4 h-4 mr-2" />
-                            )}
-                            Generate AI Report
-                        </Button>
+                        <div className="flex items-center space-x-2">
+                            <Button
+                                onClick={() => setIsAgentEnabled(!isAgentEnabled)}
+                                className={`transition-colors duration-200 ${
+                                    isAgentEnabled ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-300 hover:bg-gray-400'
+                                } text-white`}
+                            >
+                                {isAgentEnabled ? 'Agent Enabled' : 'Enable Agent'}
+                            </Button>
+                            <Button
+                                onClick={generateReport}
+                                disabled={reportStatus === 'loading'}
+                                className="bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200"
+                            >
+                                {reportStatus === 'loading' ? (
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                ) : (
+                                    <FileText className="w-4 h-4 mr-2" />
+                                )}
+                                Generate AI Report
+                            </Button>
+                        </div>
                     </header>
                     <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
                         <AnimatePresence>

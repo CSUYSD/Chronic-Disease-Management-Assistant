@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import com.example.demo.model.userimpl.Companion;
 import com.example.demo.repository.CompanionDao;
+import com.example.demo.utility.GetCurrentUserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,15 +38,17 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final PatientDao patientDao;
     private final CompanionDao companionDao;
+    private final GetCurrentUserInfo getCurrentUserInfo;
 
     @Autowired
-    public UserService(PatientDao patientDao, UserDao userDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder, CompanionDao companionDao) {
+    public UserService(PatientDao patientDao, UserDao userDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder, CompanionDao companionDao, GetCurrentUserInfo getCurrentUserInfo) {
         this.userDao = userDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = passwordEncoder;
         this.patientDao = patientDao;
         this.companionDao = companionDao;
+        this.getCurrentUserInfo = getCurrentUserInfo;
     }
 
     public List<User> findAll() {
@@ -59,26 +63,46 @@ public class UserService {
         return userDao.findByUsername(username);
     }
 
-    public void updateUser(Long id, Patient updatedUser) throws UserNotFoundException {
-        Optional<User> existingUserOptional = userDao.findById(id);
+    public void updateUser(String token, UserDTO userDTO) throws UserNotFoundException {
+        Long userId = getCurrentUserInfo.getCurrentUserId(token);
+        Optional<User> existingUserOptional = userDao.findById(userId);
 
-        if (!existingUserOptional.isPresent()) {
+        if (existingUserOptional.isEmpty()) {
             throw new UserNotFoundException("User not found");
         }
 
         User existingUser = existingUserOptional.get();
-        existingUser.setEmail(updatedUser.getEmail());
-        existingUser.setPhone(updatedUser.getPhone());
-
-
-        // 如果密码不为空，进行加密处理
-        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
-            String encodedPassword = passwordEncoder.encode(updatedUser.getPassword());
-            existingUser.setPassword(encodedPassword);
-        }
-
-
+        existingUser.setUsername(userDTO.getUsername());
+        existingUser.setEmail(userDTO.getEmail());
+        existingUser.setPhone(userDTO.getPhone());
+        existingUser.setDob(userDTO.getDob());
+        // update user info in database
         userDao.save(existingUser);
+
+        String redisUserKey = "login_user:" + userId + ":info";
+        RedisUser redisUser = (RedisUser) redisTemplate.opsForValue().get(redisUserKey);
+    
+        if (redisUser != null) {
+            // update user info in redis
+            RedisUser updatedRedisUser = new RedisUser(
+                redisUser.getUserId(),
+                userDTO.getUsername(),
+                userDTO.getEmail(),
+                userDTO.getPhone(),
+                redisUser.getAvatar(),
+                userDTO.getDob(),
+                redisUser.getRole(),
+                redisUser.getToken()
+            );
+            
+            // save update user info into redis with same login session
+            Long ttl = redisTemplate.getExpire(redisUserKey);
+            if (ttl > 0) {
+                redisTemplate.opsForValue().set(redisUserKey, updatedRedisUser, ttl, TimeUnit.SECONDS);
+            } else {
+                redisTemplate.opsForValue().set(redisUserKey, updatedRedisUser, 1, TimeUnit.HOURS);
+            }
+    }
     }
 
     public void deleteUser(Long id) throws UserNotFoundException, DataIntegrityViolationException {

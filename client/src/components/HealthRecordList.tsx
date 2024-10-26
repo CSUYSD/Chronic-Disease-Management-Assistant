@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Calendar, Edit, Trash2, Brain, HeartPulse, Stethoscope, Droplets } from "lucide-react"
+import { Calendar, Edit, Trash2, Brain, HeartPulse, Stethoscope, Droplets, AlertTriangle } from "lucide-react"
 
 interface HealthRecord {
     id: string
@@ -31,11 +31,13 @@ interface HealthRecordListProps {
 
 export default function HealthRecordList({ records, isLoading, selectedRecords, onSelectRecord, onUpdateRecord, onDeleteRecord }: HealthRecordListProps) {
     const [editingRecord, setEditingRecord] = useState<HealthRecord | null>(null)
-    const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [recordToDelete, setRecordToDelete] = useState<string | null>(null)
 
     const handleEdit = (record: HealthRecord) => {
         setEditingRecord({ ...record })
-        setIsDialogOpen(true)
+        setIsEditDialogOpen(true)
     }
 
     const handleUpdate = (event: React.FormEvent<HTMLFormElement>) => {
@@ -43,13 +45,20 @@ export default function HealthRecordList({ records, isLoading, selectedRecords, 
         if (editingRecord) {
             onUpdateRecord(editingRecord)
             setEditingRecord(null)
-            setIsDialogOpen(false)
+            setIsEditDialogOpen(false)
         }
     }
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Are you sure you want to delete this record?')) {
-            onDeleteRecord(id)
+        setRecordToDelete(id)
+        setIsDeleteDialogOpen(true)
+    }
+
+    const confirmDelete = () => {
+        if (recordToDelete) {
+            onDeleteRecord(recordToDelete)
+            setRecordToDelete(null)
+            setIsDeleteDialogOpen(false)
         }
     }
 
@@ -115,7 +124,7 @@ export default function HealthRecordList({ records, isLoading, selectedRecords, 
             {records.length === 0 && (
                 <p className="text-center text-gray-500">No health records available.</p>
             )}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Edit Health Record</DialogTitle>
@@ -200,11 +209,28 @@ export default function HealthRecordList({ records, isLoading, selectedRecords, 
                                 />
                             </div>
                             <div className="flex justify-end space-x-2">
-                                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
                                 <Button type="submit">Update Record</Button>
                             </div>
                         </form>
                     )}
+                </DialogContent>
+            </Dialog>
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirm Deletion</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this health record? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex items-center justify-center p-4">
+                        <AlertTriangle className="h-12 w-12 text-yellow-500" />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                        <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

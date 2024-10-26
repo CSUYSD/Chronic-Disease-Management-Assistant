@@ -1,4 +1,4 @@
-package com.example.demo.config.Redis;
+package com.example.demo.config.redis;
 
 import org.springframework.ai.autoconfigure.vectorstore.redis.RedisVectorStoreAutoConfiguration;
 import org.springframework.ai.autoconfigure.vectorstore.redis.RedisVectorStoreProperties;
@@ -19,7 +19,7 @@ import redis.clients.jedis.JedisPooled;
 @EnableConfigurationProperties({RedisVectorStoreProperties.class})
 public class RedisVector{
 
-    @Value("${REDIS_STACK_HOST:host.docker.internal}")
+    @Value("${REDIS_STACK_HOST:localhost}")
     private String redisStackHost;
 
     @Value("${REDIS_STACK_PORT:6380}")
