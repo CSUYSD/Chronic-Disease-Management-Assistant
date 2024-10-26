@@ -13,8 +13,8 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,13 +30,13 @@ import static io.lettuce.core.GeoArgs.Unit.m;
 @RequestMapping("/ai/chat")
 @Slf4j
 public class ChatBotController {
-    private final ChromaVectorStore chromaVectorStore;
+    private final VectorStore vectorStore;
     private final OpenAiChatModel openAiChatModel;
     private final ApplicationContext applicationContext;
     private final GetCurrentUserInfo getCurrentUserInfo;
     @Autowired
-    public ChatBotController(ChromaVectorStore chromaVectorStore, OpenAiChatModel openAiChatModel, ApplicationContext applicationContext, ApplicationContext applicationContext1, GetCurrentUserInfo getCurrentUserInfo) {
-        this.chromaVectorStore = chromaVectorStore;
+    public ChatBotController(VectorStore vectorStore, OpenAiChatModel openAiChatModel, ApplicationContext applicationContext, ApplicationContext applicationContext1, GetCurrentUserInfo getCurrentUserInfo) {
+        this.vectorStore = vectorStore;
         this.openAiChatModel = openAiChatModel;
         this.applicationContext = applicationContext;
         this.getCurrentUserInfo = getCurrentUserInfo;
@@ -125,7 +125,7 @@ public class ChatBotController {
                 ---------------------
                 给定的上下文和提供的历史信息，而不是事先的知识，回复用户的意见。如果答案不在上下文中，告诉用户你不能回答这个问题。
                 """;
-        advisorSpec.advisors(new QuestionAnswerAdvisor(chromaVectorStore, SearchRequest.defaults(), promptWithContext));
+        advisorSpec.advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults(), promptWithContext));
     }
 
 }
