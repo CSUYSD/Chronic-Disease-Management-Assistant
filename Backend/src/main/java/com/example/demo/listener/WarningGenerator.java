@@ -37,7 +37,7 @@ public class WarningGenerator {
         long accountId = request.getAccountId();
         log.debug("Processing current record: {}", currentRecord);
         log.info("Fetching recent records for accountId: {}", accountId);
-        String recentRecords = PromptConverter.parseRecentHealthRecordsToPrompt(healthRecordService.getCertainDaysRecords(accountId, 10));
+        String recentRecords = PromptConverter.parseRecentHealthRecordsToPrompt(healthRecordService.getCertainDaysRecords(accountId, 10), true);
         log.info("Recent records parsed: {}", recentRecords);
 
         log.info("Analyzing current record with AI service");

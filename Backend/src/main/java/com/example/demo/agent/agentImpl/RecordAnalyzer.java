@@ -56,7 +56,7 @@ public class RecordAnalyzer extends AbstractAgent<RecordAnalyzer.Request, String
                     .limit(20)
                     .collect(Collectors.toList());
 
-            return PromptConverter.parseRecentHealthRecordsToPrompt(recentRecords);
+            return PromptConverter.parseRecentHealthRecordsToPrompt(recentRecords, false);
         }
 
         public record Request(
