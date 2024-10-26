@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.example.demo.model.message.AnalyseRequest;
@@ -82,12 +83,15 @@ public class HealthRecordService {
                 .orElseThrow(() -> new RuntimeException("Health record not found for id: " + id));
         HealthRecordConverter.updateHealthRecordFromDTO(existingRecord, healthRecordDTO);
         healthRecordRepository.save(existingRecord);
+//       update health record to elastic search
+        ESHealthRecordService.syncHealthRecord(existingRecord);
     }
 
     public void deleteHealthRecord(Long id) {
         HealthRecord record = healthRecordRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Health record not found for id: " + id));
         healthRecordRepository.delete(record);
+        ESHealthRecordService.deleteHealthRecord(id);
     }
 
     @Transactional
@@ -97,6 +101,7 @@ public class HealthRecordService {
             throw new RuntimeException("No records found for provided IDs and accountId: " + accountId);
         }
         healthRecordRepository.deleteAll(records);
+        ESHealthRecordService.deleteHealthRecords(recordIds);
     }
 
     public List<HealthRecordDTO> getCertainDaysRecords(Long accountId, Integer duration) {

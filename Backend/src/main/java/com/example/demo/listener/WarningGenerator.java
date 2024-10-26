@@ -25,7 +25,7 @@ public class WarningGenerator {
         this.getCurrentUserInfo = getCurrentUserInfo;
         this.healthRecordService = healthRecordService;
         this.messagingTemplate = messagingTemplate;
-        log.info("WarningGenerator initialized with dependencies");
+        log.info("AiAnalyserListener initialized with dependencies");
     }
 
     @RabbitListener(queues = "new.record.to.ai.analyser")

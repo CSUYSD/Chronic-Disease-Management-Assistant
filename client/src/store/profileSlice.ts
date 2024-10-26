@@ -3,11 +3,12 @@ import { RootState } from '@/store'
 
 interface ProfileData {
     username: string
-    email: string
+    email?: string | null
     role: 'companion' | 'patient'
-    avatar: string | null
-    dob: string | null
-    phone: string | null
+    avatar?: string | null
+    dob?: string | null
+    phone?: string | null
+    bio?: string | null
 }
 
 interface ProfileState {

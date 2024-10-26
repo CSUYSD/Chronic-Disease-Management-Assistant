@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Repository
@@ -23,4 +25,6 @@ public interface HealthRecordRepository extends JpaRepository<HealthRecord, Long
 
     @Query(value = "SELECT * FROM health_records WHERE account_id = :accountId ORDER BY import_time DESC, id DESC LIMIT :duration", nativeQuery = true)
     List<HealthRecord> findCertainDaysRecords(Long accountId, Integer duration);
+
+    List<HealthRecord> findByUserIdAndImportTimeAfterOrderByImportTimeDesc(Long userId, ZonedDateTime importTime);
 }

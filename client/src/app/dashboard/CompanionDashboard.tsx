@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { UserPlus, Activity, Bot, Calendar, Mail, Phone, Heart, Droplet, Stethoscope, Droplets, ChevronDown, ChevronUp } from "lucide-react"
-import { BindPatientAPI, GetPatientInfo } from "@/api/companion"
+import { BindPatientAPI, GetPatientInfo, GetPatientRecords } from "@/api/companion"
 import { toast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { GetReportAPI } from "@/api/ai"
@@ -26,6 +26,12 @@ interface HealthRecord {
     description: string
 }
 
+interface Account {
+    name: string
+    total_income: number | null
+    total_expense: number | null
+}
+
 interface PatientDTO {
     id: number
     username: string
@@ -33,8 +39,8 @@ interface PatientDTO {
     phone: string
     dob: string
     avatar: string | null
-    selectedAccountName: string
-    healthRecords: HealthRecord[]
+    selectedAccountName: string | null
+    accounts: Account[]
 }
 
 interface HealthReport {
@@ -68,9 +74,12 @@ export default function CompanionDashboard() {
     const [patient, setPatient] = useState<PatientDTO | null>(null)
     const [bindingCode, setBindingCode] = useState('')
     const [loading, setLoading] = useState(true)
+    const [recordsLoading, setRecordsLoading] = useState(false)
     const [report, setReport] = useState<HealthReport | null>(null)
     const [reportStatus, setReportStatus] = useState<'idle' | 'loading' | 'error'>('idle')
     const [isReportExpanded, setIsReportExpanded] = useState(false)
+    const [selectedDisease, setSelectedDisease] = useState<string | null>(null)
+    const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([])
 
     useEffect(() => {
         fetchPatientInfo()
@@ -81,6 +90,10 @@ export default function CompanionDashboard() {
             const response = await GetPatientInfo()
             if (response.status === 200) {
                 setPatient(response.data)
+                if (response.data.accounts.length > 0) {
+                    setSelectedDisease(response.data.accounts[0].name)
+                    fetchPatientRecords(response.data.accounts[0].name)
+                }
                 fetchHealthReport()
             }
         } catch (error: any) {
@@ -99,11 +112,32 @@ export default function CompanionDashboard() {
         }
     }
 
+    const fetchPatientRecords = async (accountName: string) => {
+        setRecordsLoading(true)
+        try {
+            const response = await GetPatientRecords(accountName)
+            console.log("sending accountName: ", accountName)
+            if (response.status === 200) {
+                setHealthRecords(response.data)
+            }
+        } catch (error) {
+            console.error('Failed to fetch patient records:', error)
+            toast({
+                title: "Error",
+                description: "Failed to fetch patient records. Please try again later.",
+                variant: "destructive",
+            })
+            setHealthRecords([])
+        } finally {
+            setRecordsLoading(false)
+        }
+    }
+
     const handleBindPatient = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         setLoading(true)
         try {
-            const response = await BindPatientAPI({ randomString: bindingCode })
+            const response = await BindPatientAPI(bindingCode)
             if (response.status === 200) {
                 toast({
                     title: "Success",
@@ -220,7 +254,7 @@ export default function CompanionDashboard() {
         )
     }
 
-    const groupedHealthRecords = groupHealthRecordsByDate(patient.healthRecords)
+    const groupedHealthRecords = groupHealthRecordsByDate(healthRecords)
 
     return (
         <div className="space-y-6">
@@ -251,7 +285,9 @@ export default function CompanionDashboard() {
                                 </Avatar>
                                 <div>
                                     <h2 className="text-2xl font-bold">{patient.username}</h2>
-                                    <p className="text-muted-foreground">{patient.selectedAccountName}</p>
+                                    <p className="text-muted-foreground">
+                                        Diseases: {patient.accounts.map(account => account.name).join(', ')}
+                                    </p>
                                 </div>
                             </motion.div>
                             <motion.div
@@ -276,34 +312,64 @@ export default function CompanionDashboard() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                                {groupedHealthRecords.length > 0 ? (
-                                    groupedHealthRecords.map(([date, records]) => (
-                                        <Collapsible
-                                            key={date}
-                                            title={
-                                                <div className="flex items-center">
-                                                    <Calendar className="mr-2 h-4 w-4" />
-                                                    <span>{date}</span>
-                                                </div>
-                                            }
+                            <div className="mb-4">
+                                <h3 className="text-lg font-semibold mb-2">Select a Disease</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {patient.accounts.map((account) => (
+                                        <Button
+                                            key={account.name}
+                                            variant={selectedDisease === account.name ? "default" : "outline"}
+                                            onClick={() => {
+                                                setSelectedDisease(account.name)
+                                                fetchPatientRecords(account.name)
+                                            }}
                                         >
-                                            {records.map((record, index) => (
-                                                <div key={index} className="mb-4 p-4 bg-gray-100 rounded-lg">
-                                                    <p className="font-medium mb-2">Time: {new Date(record.importTime).toLocaleTimeString()}</p>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <p><Heart className="inline mr-1" /> Blood Pressure: {record.sbp}/{record.dbp} mmHg</p>
-                                                        <p><Droplet className="inline mr-1" /> Headache: {record.isHeadache}</p>
-                                                        <p><Stethoscope className="inline mr-1" /> Chest Pain: {record.isChestPain}</p>
-                                                        <p><Droplets className="inline mr-1" /> Less Urination: {record.isLessUrination}</p>
+                                            {account.name}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+                            <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+                                {recordsLoading ? (
+                                    <div className="flex justify-center items-center h-full">
+                                        <motion.div
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                            className="w-8 h-8 border-t-2 border-blue-500 rounded-full"
+                                        />
+                                    </div>
+                                ) : selectedDisease ? (
+                                    groupedHealthRecords.length > 0 ? (
+                                        groupedHealthRecords.map(([date, records]) => (
+                                            <Collapsible
+                                                key={date}
+                                                title={
+                                                    <div className="flex items-center">
+                                                        <Calendar className="mr-2 h-4 w-4" />
+                                                        <span>{date}</span>
                                                     </div>
-                                                    <p className="mt-2"><span className="font-medium">Description:</span> {record.description}</p>
-                                                </div>
-                                            ))}
-                                        </Collapsible>
-                                    ))
+                                                }
+                                            >
+                                                {records.map((record, index) => (
+                                                    <div key={index} className="mb-4 p-4 bg-gray-100 rounded-lg">
+                                                        <p className="font-medium mb-2">Time: {new Date(record.importTime).toLocaleTimeString()}</p>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <p><Heart className="inline mr-1" /> Blood Pressure: {record.sbp}/{record.dbp} mmHg</p>
+                                                            <p><Droplet className="inline mr-1" /> Headache: {record.isHeadache}</p>
+                                                            <p><Stethoscope className="inline mr-1" /> Chest Pain: {record.isChestPain}</p>
+                                                            <p><Droplets className="inline mr-1" /> Less Urination: {record.isLessUrination}</p>
+                                                        </div>
+                                                        <p className="mt-2"><span className="font-medium">Description:</span> {record.description}</p>
+                                                    </div>
+                                                ))}
+                                            </Collapsible>
+                                        ))
+                                    ) : (
+                                        <p>No health records available for the selected disease.</p>
+                                    )
                                 ) : (
-                                    <p>No health records available.</p>
+
+                                    <p>Please select a disease to view health records.</p>
                                 )}
                             </ScrollArea>
                         </CardContent>
@@ -358,7 +424,7 @@ export default function CompanionDashboard() {
                                     )}
                                     {report.generatedAt && (
                                         <p className="text-sm text-gray-500 mt-4">
-                                            Generated  at: {new Date(report.generatedAt).toLocaleString()}
+                                            Generated at: {new Date(report.generatedAt).toLocaleString()}
                                         </p>
                                     )}
                                 </div>

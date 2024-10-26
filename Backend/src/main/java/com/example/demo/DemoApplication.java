@@ -1,15 +1,15 @@
 package com.example.demo;
 
-
-import org.springframework.ai.chroma.ChromaApi;
+import org.springframework.ai.autoconfigure.vectorstore.redis.RedisVectorStoreProperties;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -49,22 +49,38 @@ public class DemoApplication {
 		return new OpenAiEmbeddingModel(new OpenAiApi(openAiApiKey));
 	}
 
-	@Bean
-	public RestClient.Builder builder() {
-		return RestClient.builder().requestFactory(new SimpleClientHttpRequestFactory());
-	}
-
-
+//	@Bean
+//	public RestClient.Builder restClientBuilder() {
+//		return RestClient.builder()
+//				.requestFactory(new SimpleClientHttpRequestFactory());
+//	}
+//
 //	@Bean
 //	public ChromaApi chromaApi(RestClient.Builder restClientBuilder) {
-//		String chromaUrl = "http://localhost:8000";
+//		String chromaUrl = "http://chroma:8000";
 //		ChromaApi chromaApi = new ChromaApi(chromaUrl, restClientBuilder);
+//		chromaApi.withKeyToken("admin:admin");
 //		return chromaApi;
 //	}
 //
 //	@Bean
 //	public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-//		return new ChromaVectorStore(embeddingModel, chromaApi, "my-collection", false);
+//		try {
+//			// Create the "health-ai" collection
+//			String collectionName = "health-ai";
+//			ChromaApi.CreateCollectionRequest request = new ChromaApi.CreateCollectionRequest(collectionName);
+//			ChromaApi.Collection collection = chromaApi.createCollection(request);
+//			System.out.println("Collection created successfully: " + collection.name());
+//
+//			// Initialize ChromaVectorStore with the created collection
+//			VectorStore store = new ChromaVectorStore(embeddingModel, chromaApi, collectionName, true);
+//			System.out.println("ChromaVectorStore initialized successfully");
+//			return store;
+//		} catch (Exception e) {
+//			System.err.println("Error initializing ChromaVectorStore: " + e.getMessage());
+//			e.printStackTrace();
+//			throw e;
+//		}
 //	}
 
 }
