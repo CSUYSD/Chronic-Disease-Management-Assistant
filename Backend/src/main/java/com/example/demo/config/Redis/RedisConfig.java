@@ -1,4 +1,4 @@
-package com.example.demo.config.redis;
+package com.example.demo.config.Redis;
 
 import com.example.demo.model.RedisAccount;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
