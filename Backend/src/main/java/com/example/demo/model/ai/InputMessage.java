@@ -6,10 +6,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class InputMessage {
-    Long conversationId;
+    String conversationId;
     String message;
     String accountId;
-    public InputMessage(String message, Long conversationId, String accountId) {
+    public InputMessage(String message, String conversationId, String accountId) {
         this.message = message;
         this.conversationId = conversationId;
         this.accountId = accountId;
