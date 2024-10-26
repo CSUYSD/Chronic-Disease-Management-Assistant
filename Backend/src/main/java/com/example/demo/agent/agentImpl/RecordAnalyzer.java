@@ -68,6 +68,7 @@ public class RecordAnalyzer extends AbstractAgent<RecordAnalyzer.Request, String
                 String message
         ) {}
 
-
     }
+
 }
+

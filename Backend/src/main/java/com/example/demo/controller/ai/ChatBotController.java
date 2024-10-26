@@ -50,7 +50,7 @@ public class ChatBotController {
         String[] functionBeanNames = new String[0];
         // 如果启用Agent则获取Agent的bean
         if (input.getParams().getEnableAgent()) {
-            // 获取带有Agent注解的bean
+            // get all beans with annotation Agent
             Map<String, Object> beansWithAnnotation = applicationContext.getBeansWithAnnotation(Agent.class);
             functionBeanNames = new String[beansWithAnnotation.keySet().size()];
             functionBeanNames = beansWithAnnotation.keySet().toArray(functionBeanNames);
@@ -60,17 +60,14 @@ public class ChatBotController {
 
         return ChatClient.create(openAiChatModel).prompt()
                 .user(promptUserSpec -> buildPrompt(promptUserSpec, input))
-                // 2. QuestionAnswerAdvisor会在运行时替换模板中的占位符`question_answer_context`，替换成向量数据库中查询到的文档。此时的query=用户的提问+替换完的提示词模板;
-//                .advisors(new QuestionAnswerAdvisor(chromaVectorStore, SearchRequest.defaults(), promptWithContext))
                 .functions(functionBeanNames)
                 .advisors(advisorSpec -> {
-                    // 使用历史消息
+                    // use chat memory
                     useChatHistory(advisorSpec, String.valueOf(input.getInputMessage().getConversationId()));
-                    // 使用向量数据库
+                    // use vector db
                     useVectorStore(advisorSpec, input.getParams().getEnableVectorStore());
                 })
                 .call()
-                // 3. query发送给大模型得到答案
                 .content();
     }
 
@@ -85,14 +82,13 @@ public class ChatBotController {
     }
 
 
-    //streaming chat with memory use SSE pipeline.
     @GetMapping(value = "/general", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public String chatStream(@RequestParam String prompt, @RequestParam String sessionId) {
         MessageChatMemoryAdvisor messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory, sessionId, 10);
         return ChatClient.create(openAiChatModel).prompt()
                 .user(prompt)
                 .advisors(messageChatMemoryAdvisor)
-                .call() //流式返回
+                .call()
                 .content();
     }
 
@@ -103,22 +99,17 @@ public class ChatBotController {
     }
 
     public void useChatHistory(ChatClient.AdvisorSpec advisorSpec, String sessionId) {
-        // 1. 如果需要存储会话和消息到数据库，自己可以实现ChatMemory接口，这里使用自己实现的AiMessageChatMemory，数据库存储。
-        // 2. 传入会话id，MessageChatMemoryAdvisor会根据会话id去查找消息。
-        // 3. 只需要携带最近10条消息
-        // MessageChatMemoryAdvisor会在消息发送给大模型之前，从ChatMemory中获取会话的历史消息，然后一起发送给大模型。
         advisorSpec.advisors(new MessageChatMemoryAdvisor(chatMemory, sessionId, 10));
     }
 
     public void useVectorStore(ChatClient.AdvisorSpec advisorSpec, Boolean enableVectorStore) {
         if (!enableVectorStore) return;
-        // question_answer_context是一个占位符，会替换成向量数据库中查询到的文档。QuestionAnswerAdvisor会替换。
         String promptWithContext = """
-                下面是上下文信息
+                Below is the context information:
                 ---------------------
                 {question_answer_context}
                 ---------------------
-                给定的上下文和提供的历史信息，而不是事先的知识，回复用户的意见。如果答案不在上下文中，告诉用户你不能回答这个问题。
+                Please respond based on the provided context and historical information, rather than using prior knowledge. If the answer is not present in the context, let the user know that you don't know the answer.
                 """;
         advisorSpec.advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults(), promptWithContext));
     }
