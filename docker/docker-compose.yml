@@ -2,7 +2,7 @@ name: healthCare-ai
 
 services:
   backend:
-    image: eric0023/backend:latest
+    build: ../Backend
     ports:
       - "8080:8080"
     depends_on:
@@ -32,7 +32,7 @@ services:
       - app-network
 
   frontend:
-    image: eric0023/frontend:latest
+    build: ../client
     ports:
       - "3000:3000"
     depends_on:
@@ -40,6 +40,7 @@ services:
     environment:
       - HOST=0.0.0.0
       - NEXT_PUBLIC_API_URL=https://3.106.177.60/api
+      - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
     networks:
       - app-network
 
