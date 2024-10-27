@@ -54,20 +54,27 @@ public class AiAnalyserService {
 
     public String analyseCurrentRecord(String currentRecord, String recentRecords) {
         String context = """
-        Based on the following recent health records, generate a reply using the context provided.:
+        Based on the following recent health records, generate a reply using the context provided:
         ---------------------
         {context}
         ---------------------
-        keep your response under 50 words, generate your response with 'WARNING' on the context following conditions:
-        1. If you find this record is not stable compare with given context
-        2. If the sbp and dbp of given record is higher than 140 and 90 respectively.
+        Above is the recent record, only use it as a reference, do not include it in your reply.
         """;
         try {
-            Message userMessage = new UserMessage(currentRecord);
+            Message userMessage = new UserMessage(
+                    "Here is my current record: " + currentRecord + ". " +
+                            "If no recent records are given, reply nothing. " +
+                            "If you find the current record exceeds the safe thresholds, or if there are signs of severe discomfort, start your reply with 'WARNING'. " +
+                            "The conditions for triggering a warning are as follows: " +
+                            "1. SBP > 140 or DBP > 90. " +
+                            "2. User reports symptoms of severe discomfort or difficulty, such as chest pain, dizziness, or shortness of breath. " +
+                            "If the current record is within these thresholds and no severe discomfort is indicated, reply nothing. " +
+                            "Keep your response under 50 words."
+            );
 
             SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(context);
 
-            Message systemMessage = systemPromptTemplate.createMessage(Map.of("context", recentRecords) );
+            Message systemMessage = systemPromptTemplate.createMessage(Map.of("context", recentRecords));
 
             Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
             List<Generation> generations = openAiChatModel.call(prompt).getResults();
@@ -76,6 +83,9 @@ public class AiAnalyserService {
             return "Error: " + e.getMessage();
         }
     }
+
+
+
 
     public String generateOverAllHealthReport(String token) {
         Long userId = getCurrentUserInfo.getCurrentUserId(token);
