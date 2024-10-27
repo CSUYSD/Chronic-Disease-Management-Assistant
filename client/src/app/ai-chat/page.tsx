@@ -11,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
-import { FluxMessageWithHistoryAPI, UploadFileAPI, ChatWithFileAPI, ClearFileAPI, ClearFileByFileName, GenerateReportAPI } from '@/api/ai'
+import { UploadFileAPI, ChatWithFileAPI, ClearFileAPI, ClearFileByFileName, GenerateReportAPI } from '@/api/ai'
 import { useDispatch, useSelector } from 'react-redux'
 import { v4 as uuidv4 } from 'uuid'
 import { addChat, updateChat, deleteChat, setCurrentChatId } from '@/store/chatSlice'
@@ -112,38 +112,16 @@ export default function AiChatPage() {
         setIsTyping(true)
 
         try {
-            let response;
-            if (isAgentEnabled) {
-                // Always use ChatWithFileAPI when agent is enabled
-                response = await ChatWithFileAPI({
-                    inputMessage: {
-                        conversationId: currentChat.id,
-                        message: input
-                    },
-                    params: {
-                        enableAgent: true,
-                        enableVectorStore: false
-                    }
-                })
-            } else if (uploadedFiles.length > 0) {
-                // Use ChatWithFileAPI with vector store when files are uploaded but agent is not enabled
-                response = await ChatWithFileAPI({
-                    inputMessage: {
-                        conversationId: currentChat.id,
-                        message: input
-                    },
-                    params: {
-                        enableAgent: false,
-                        enableVectorStore: true
-                    }
-                })
-            } else {
-                // Use FluxMessageWithHistoryAPI when no files are uploaded and agent is not enabled
-                response = await FluxMessageWithHistoryAPI({
-                    prompt: input,
-                    sessionId: currentChat.id
-                })
-            }
+            const response = await ChatWithFileAPI({
+                inputMessage: {
+                    conversationId: currentChat.id,
+                    message: input
+                },
+                params: {
+                    enableAgent: isAgentEnabled,
+                    enableVectorStore: uploadedFiles.length > 0
+                }
+            })
 
             const aiResponse = response.data
 
