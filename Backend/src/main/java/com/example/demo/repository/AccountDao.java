@@ -15,7 +15,6 @@ import com.example.demo.model.userimpl.Patient;
 @Repository
 public interface AccountDao extends JpaRepository<Account, Long> {
 
-    
     @Query("SELECT a.id FROM Account a WHERE a.accountName = ?1 AND a.patient.id = ?2")
     Long findAccountIdByAccountNameAndPatientId(String accountName, Long patientId);
 

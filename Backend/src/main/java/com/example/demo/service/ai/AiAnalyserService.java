@@ -54,22 +54,23 @@ public class AiAnalyserService {
 
     public String analyseCurrentRecord(String currentRecord, String recentRecords) {
         String context = """
-        Based on the following recent health records, generate a reply using the context provided:
-        ---------------------
-        {context}
-        ---------------------
-        Above is the recent record, only use it as a reference, do not include it in your reply.
-
-        Instructions:
-        - If no recent records are given, reply nothing.
-        - If the current record exceeds the safe thresholds, or if there are signs of severe discomfort, start your reply with 'WARNING'.
+    You are analyzing a recent blood pressure record to assess if it indicates potential health risks for a hypertension patient.
     
-        The conditions for triggering a warning are as follows:
-        1. SBP > 140 or DBP > 90.
-        2. User reports symptoms of severe discomfort or difficulty, such as chest pain, dizziness, or shortness of breath.
+    Recent blood pressure and symptom records for reference:
+    ---------------------
+    {context}
+    ---------------------
+    Use the above records only for context and do not include them directly in your reply.
     
-        Only provide a reply if a warning is triggered. If the current record is within safe thresholds and no severe discomfort is indicated, reply nothing.
-        Keep your response under 50 words.
+    Instructions:
+    - Begin your reply with 'WARNING' only if the current record shows significant risk factors or unusual symptoms for a hypertension patient. Examples include:
+        - Sudden increase in SBP (Systolic Blood Pressure) or DBP (Diastolic Blood Pressure) beyond safe levels, compared to recent records.
+        - Presence of critical symptoms like chest pain, severe headache, or less urination which may indicate worsening health conditions.
+        - Persistent or new symptoms like chest pain or severe headache that were not previously recorded.
+    - If the record does not indicate immediate risk, provide a brief summary, such as "No critical changes detected."
+    
+    Keep your response under 50 words.
+    
     """;
 
         try {

@@ -3,10 +3,7 @@ package com.example.demo.model.userimpl;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.example.demo.model.Account;
-import com.example.demo.model.HealthRecord;
-import com.example.demo.model.HealthReport;
-import com.example.demo.model.User;
+import com.example.demo.model.*;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
@@ -36,5 +33,10 @@ public class Patient extends User {
         @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
         @JsonManagedReference
         private List<HealthReport> healthReports = new ArrayList<>();
+
+        @Getter
+        @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
+        @JsonManagedReference
+        private List<WarningRecord> warningRecord = new ArrayList<>();
 
 }
