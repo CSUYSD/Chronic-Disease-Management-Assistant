@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { UserPlus, Activity, Bot, Calendar, Mail, Phone, Heart, Droplet, Stethoscope, Droplets, ChevronDown, ChevronUp } from "lucide-react"
-import { BindPatientAPI, GetPatientInfo, GetPatientRecords } from "@/api/companion"
+import { UserPlus, Activity, Bot, Calendar, Mail, Phone, Heart, Droplet, Stethoscope, Droplets, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react"
+import { BindPatientAPI, GetPatientInfo, GetPatientRecords, GetPatientWarningRecords } from "@/api/companion"
 import { toast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { GetReportAPI } from "@/api/ai"
@@ -48,6 +48,11 @@ interface HealthReport {
     generatedAt: string
 }
 
+interface WarningRecord {
+    id: number
+    content: string
+}
+
 interface CollapsibleProps {
     title: React.ReactNode
     children: React.ReactNode
@@ -80,6 +85,7 @@ export default function CompanionDashboard() {
     const [isReportExpanded, setIsReportExpanded] = useState(false)
     const [selectedDisease, setSelectedDisease] = useState<string | null>(null)
     const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([])
+    const [warningRecords, setWarningRecords] = useState<WarningRecord[]>([])
 
     useEffect(() => {
         fetchPatientInfo()
@@ -95,6 +101,7 @@ export default function CompanionDashboard() {
                     fetchPatientRecords(response.data.accounts[0].name)
                 }
                 fetchHealthReport()
+                fetchWarningRecords()
             }
         } catch (error: any) {
             console.error('Failed to fetch patient info:', error)
@@ -133,6 +140,30 @@ export default function CompanionDashboard() {
         }
     }
 
+    const fetchWarningRecords = async () => {
+        try {
+            const response = await GetPatientWarningRecords()
+            if (response.status === 200) {
+                const processedWarningRecords = response.data.map((record: any) => {
+                    const contentMatch = record.content.match(/textContent=(.*?), metadata/)
+                    let content = contentMatch ? contentMatch[1] : record.content
+                    if (content.startsWith('WARNING:')) {
+                        content = '⚠️ ' + content
+                    }
+                    return { id: record.id, content }
+                })
+                setWarningRecords(processedWarningRecords)
+            }
+        } catch (error) {
+            console.error('Failed to fetch warning records:', error)
+            toast({
+                title: "Error",
+                description: "Failed to fetch warning records. Please try again later.",
+                variant: "destructive",
+            })
+        }
+    }
+
     const handleBindPatient = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         setLoading(true)
@@ -144,6 +175,7 @@ export default function CompanionDashboard() {
                     description: "Patient bound successfully.",
                 })
                 await fetchPatientInfo()
+                await fetchWarningRecords()
             }
         } catch (error: any) {
             console.error('Failed to bind patient:', error)
@@ -259,9 +291,10 @@ export default function CompanionDashboard() {
     return (
         <div className="space-y-6">
             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="health-records">Health Records</TabsTrigger>
+                    <TabsTrigger value="warning-records">Warning Records</TabsTrigger>
                     <TabsTrigger value="ai-report">AI Report</TabsTrigger>
                 </TabsList>
                 <TabsContent value="overview">
@@ -344,6 +377,7 @@ export default function CompanionDashboard() {
                                             <Collapsible
                                                 key={date}
                                                 title={
+
                                                     <div className="flex items-center">
                                                         <Calendar className="mr-2 h-4 w-4" />
                                                         <span>{date}</span>
@@ -368,8 +402,30 @@ export default function CompanionDashboard() {
                                         <p>No health records available for the selected disease.</p>
                                     )
                                 ) : (
-
                                     <p>Please select a disease to view health records.</p>
+                                )}
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="warning-records">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center">
+                                <AlertTriangle className="mr-2 h-5 w-5 text-yellow-500" />
+                                Warning Records
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+                                {warningRecords.length > 0 ? (
+                                    warningRecords.map((record) => (
+                                        <div key={record.id} className="mb-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                            <p className="mb-2">{record.content}</p>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p>No warning records available.</p>
                                 )}
                             </ScrollArea>
                         </CardContent>
