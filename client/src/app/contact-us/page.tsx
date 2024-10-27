@@ -17,8 +17,8 @@ const mapContainerStyle = {
 }
 
 const center = {
-    lat: 37.7749,
-    lng: -122.4194
+    lat: -33.8882,
+    lng: 151.1871
 }
 
 const MotionCard = motion(Card)
@@ -229,7 +229,7 @@ export default function ContactUsPage() {
                                         transition={{ type: 'spring', stiffness: 300 }}
                                     >
                                         <MapPin className="mr-2 h-5 w-5 text-blue-500" />
-                                        123 Health Street, Medical District, City, 12345
+                                        The University of Sydney, Camperdown NSW 2006, Australia
                                     </motion.p>
                                     <motion.p
                                         className="flex items-center"
@@ -245,7 +245,7 @@ export default function ContactUsPage() {
                                         transition={{ type: 'spring', stiffness: 300 }}
                                     >
                                         <Phone className="mr-2 h-5 w-5 text-blue-500" />
-                                        +1 (555) 123-4567
+                                        +61 2 9351 2222
                                     </motion.p>
                                     <motion.p
                                         className="flex items-center"
@@ -277,6 +277,9 @@ export default function ContactUsPage() {
                                                         mapContainerStyle={mapContainerStyle}
                                                         center={center}
                                                         zoom={14}
+                                                        options={{
+                                                            language: 'en',
+                                                        }}
                                                     >
                                                         <Marker position={center} />
                                                     </GoogleMap>
@@ -310,8 +313,8 @@ export default function ContactUsPage() {
                                         {coffeeCount}
                                     </motion.div>
                                     <Button
-                                        onClick={() => setCoffeeCount(coffeeCount +
-                                            1)}
+                                        onClick={() => setCoffeeCount(coffeeCount + 1)}
+
                                         className="text-lg px-4 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors duration-200"
                                     >
                                         +

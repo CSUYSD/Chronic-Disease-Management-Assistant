@@ -29,3 +29,7 @@ export function GetPatientRecords(accountName: string) {
         }
     })
 }
+
+export function GetPatientWarningRecords() {
+    return
+}
