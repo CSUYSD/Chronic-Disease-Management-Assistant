@@ -38,7 +38,7 @@ class WebSocketService {
         }
 
         const token = getToken();
-        const socket = new SockJS(`https://3.106.177.60/api/ws`);
+        const socket = new SockJS(`http://localhost:8080/ws`);
 
         this.stompClient = new Client({
             webSocketFactory: () => socket,
@@ -81,7 +81,7 @@ class WebSocketService {
         console.log('Received message:', message);
         try {
             const content = message.body;
-            const textContentMatch = content.match(/textContent=([^.]+\.)/);
+            const textContentMatch = content.match(/textContent=(.*?)(?=, metadata)/);
             if (textContentMatch) {
                 let description = textContentMatch[1].trim();
                 // remove / in the beginning
